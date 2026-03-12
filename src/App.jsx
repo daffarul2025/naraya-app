@@ -17,9 +17,18 @@ const DD = {
   themes:   ["Edukasi","Promosi","Hiburan","Informasi","Tutorial","Motivasi","Lifestyle","Review"],
 };
 
+// ─── DUMMY USERS (username → {password, role}) ───────────────────────────────
 const USERS = {
-  "kontennarayaoneAI|#gunakan_AI":        "freelancer",
-  "kontennarayaoneAI|#adminnarayaone_AI": "admin",
+  // Admin
+  "admin":           {pass:"admin123",    role:"admin"},
+  "naraya.admin":    {pass:"naraya2025",  role:"admin"},
+  // Freelancer / Kreator
+  "arya":            {pass:"arya123",     role:"freelancer"},
+  "darul":           {pass:"darul123",    role:"freelancer"},
+  "revi":            {pass:"revi123",     role:"freelancer"},
+  "vika":            {pass:"vika123",     role:"freelancer"},
+  "nessa":           {pass:"nessa123",    role:"freelancer"},
+  "khaira":          {pass:"khaira123",   role:"freelancer"},
 };
 const ADMIN_EMAILS = ["admin@naraya.one","naraya.admin@gmail.com"];
 function getRoleFromEmail(email) {
@@ -117,6 +126,52 @@ input,select,textarea,button{font-family:inherit}
   .desk-only{display:none!important}
 }
 @media(min-width:769px){.sidebar-wrap{position:relative!important;left:0!important}}
+
+/* ── Login Page ── */
+.login-right-panel{overflow:hidden!important}
+.login-right-panel::-webkit-scrollbar{display:none!important}
+body:has(.login-right-panel){overflow:hidden!important}
+
+/* Kunci semua input di login agar tidak geser saat Tab/focus */
+.login-right-panel input{
+  box-sizing:border-box!important;
+  outline:none!important;
+  outline-offset:0!important;
+  -webkit-appearance:none!important;
+}
+.login-right-panel input:focus{
+  outline:none!important;
+  border-color:#f97316!important;
+  box-shadow:none!important;
+  transform:none!important;
+}
+.login-right-panel *{
+  box-sizing:border-box;
+}
+/* Hapus semua browser default focus ring */
+.login-right-panel button:focus,
+.login-right-panel input:focus,
+.login-right-panel select:focus{
+  outline:none!important;
+  outline-offset:0!important;
+}
+
+@media(max-width:768px){
+  .login-right-panel{
+    max-width:100%!important;
+    border-left:none!important;
+    height:100vh!important;
+    min-height:unset!important;
+    justify-content:center!important;
+    padding:28px 20px!important;
+    overflow:hidden!important;
+  }
+  .login-title-sm{font-size:22px!important}
+}
+@media(max-width:400px){
+  .login-right-panel{padding:20px 16px!important}
+  .login-title-sm{font-size:19px!important}
+}
 `;
 
 function Icon({name,size=18}){
@@ -273,6 +328,7 @@ export default function App(){
   const [data,setData]=useState(null);
   const [authUser,setAuthUser]=useState(null);
   const [role,setRole]=useState(null);
+  const [loggedUsername,setLoggedUsername]=useState("");
   const [appLoading,setAppLoading]=useState(true);
   const [page,setPage]=useState("home");
   const [sideOpen,setSideOpen]=useState(false);
@@ -288,7 +344,7 @@ export default function App(){
           const r=getRoleFromEmail(session.user.email);
           setAuthUser(session.user);setRole(r);setPage(r==="admin"?"home":"input");
         } else {
-          try{const s=localStorage.getItem(SESSION_KEY);if(s){const{role:r}=JSON.parse(s);setRole(r);setPage(r==="admin"?"home":"input");}}catch{}
+          try{const s=localStorage.getItem(SESSION_KEY);if(s){const{role:r,username:u}=JSON.parse(s);setRole(r);if(u)setLoggedUsername(u);setPage(r==="admin"?"home":"input");}}catch{}
         }
         setAppLoading(false);
       });
@@ -297,7 +353,7 @@ export default function App(){
       });
       return()=>subscription.unsubscribe();
     } else {
-      try{const s=localStorage.getItem(SESSION_KEY);if(s){const{role:r}=JSON.parse(s);setRole(r);setPage(r==="admin"?"home":"input");}}catch{}
+      try{const s=localStorage.getItem(SESSION_KEY);if(s){const{role:r,username:u}=JSON.parse(s);setRole(r);if(u)setLoggedUsername(u);setPage(r==="admin"?"home":"input");}}catch{}
       setAppLoading(false);
     }
   },[]);
@@ -343,8 +399,8 @@ export default function App(){
   if(resetMode)  return <ResetPasswordPage onDone={()=>setResetMode(false)}/>;
   if(!role) return(
     <LoginPage
-      onLogin={r=>{localStorage.setItem(SESSION_KEY,JSON.stringify({role:r}));setRole(r);setPage(r==="admin"?"home":"input");}}
-      onLoginSupabase={(r,user)=>{setAuthUser(user);setRole(r);setPage(r==="admin"?"home":"input");}}
+      onLogin={(r,uname)=>{localStorage.setItem(SESSION_KEY,JSON.stringify({role:r,username:uname}));setRole(r);setLoggedUsername(uname);setPage(r==="admin"?"home":"input");}}
+      onLoginSupabase={(r,user)=>{setAuthUser(user);setRole(r);const uname=user.user_metadata?.username||user.user_metadata?.full_name||user.email?.split("@")[0]||"";setLoggedUsername(uname);setPage(r==="admin"?"home":"input");}}
     />
   );
   if(!data) return <Spinner text="Memuat data..."/>;
@@ -360,7 +416,7 @@ export default function App(){
     accounts:      Array.isArray(data.accounts) ? data.accounts : ["WiFicerdas","NarayaConnect","Curhat.santui","SobatNgadu","Mbokdewor","GA.naratelgroup"],
     themes:        Array.isArray(data.themes)   ? data.themes   : ["Edukasi","Promosi","Hiburan","Informasi","Tutorial","Motivasi","Lifestyle","Review"],
   };
-  const props={data:safeData,updData,editPost,delPost,addPost,showToast,setCsvModal,setPage,role};
+  const props={data:safeData,updData,editPost,delPost,addPost,showToast,setCsvModal,setPage,role,loggedUsername};
 
   return(
     <div style={{minHeight:"100vh",background:"#040710",color:"#cbd5e1",fontFamily:"'DM Sans','Segoe UI',sans-serif"}}>
@@ -369,7 +425,7 @@ export default function App(){
         {sideOpen&&<div className="mob-overlay" onClick={()=>setSideOpen(false)}/>}
         <div className={`sidebar-wrap${sideOpen?" open":""}`} style={{width:210,background:"#02040a",borderRight:"1px solid #0d1018",display:"flex",flexDirection:"column",padding:"16px 9px",flexShrink:0,zIndex:150}}>
           <div style={{padding:"4px 8px 20px"}}>
-            <div style={{fontFamily:"'Syne',sans-serif",fontSize:17,fontWeight:800,background:"linear-gradient(135deg,#6366f1,#a78bfa)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>Naraya One</div>
+            <div style={{fontFamily:"'Syne',sans-serif",fontSize:17,fontWeight:800,background:"linear-gradient(135deg,#7c3aed,#f97316,#f59e0b)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>Naraya One</div>
             <div style={{fontSize:7.5,color:"#1e2535",fontWeight:700,letterSpacing:".14em",marginTop:1}}>CONTENT MANAGEMENT TRACKER</div>
           </div>
           <nav style={{flex:1,display:"flex",flexDirection:"column",gap:2}}>
@@ -382,8 +438,8 @@ export default function App(){
           </nav>
           <div style={{borderTop:"1px solid #0d1018",paddingTop:12,marginTop:6}}>
             <div style={{fontSize:10,color:"#1e2a3a",padding:"0 8px 8px",fontWeight:700}}>
-              {role==="admin"?"👑 Admin":"🧑‍💻 Freelancer"}
-              {authUser&&<span style={{display:"block",fontSize:9,marginTop:2,fontWeight:400}}>{authUser.email}</span>}
+              <span style={{color:"#94a3b8",fontSize:11,fontWeight:600}}>{loggedUsername||authUser?.email?.split("@")[0]||(role==="admin"?"Admin":"Freelancer")}</span>
+              <span style={{display:"block",fontSize:9,color:"#334155",marginTop:1}}>{role==="admin"?"👑 Admin":"🧑 Freelancer"}</span>
             </div>
             <button className="nav-btn" onClick={doLogout}><Icon name="logout" size={14}/> Keluar</button>
           </div>
@@ -391,7 +447,7 @@ export default function App(){
         <div style={{flex:1,overflow:"auto",display:"flex",flexDirection:"column"}}>
           <div className="mob-topbar">
             <button onClick={()=>setSideOpen(true)} style={{background:"none",border:"none",color:"#94a3b8",cursor:"pointer",display:"flex"}}><Icon name="menu" size={20}/></button>
-            <div style={{fontFamily:"'Syne',sans-serif",fontSize:15,fontWeight:800,background:"linear-gradient(135deg,#6366f1,#a78bfa)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>Naraya One</div>
+            <div style={{fontFamily:"'Syne',sans-serif",fontSize:15,fontWeight:800,background:"linear-gradient(135deg,#7c3aed,#f97316,#f59e0b)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>Naraya One</div>
             <div style={{fontSize:10,color:role==="admin"?"#a78bfa":"#64748b",fontWeight:700}}>{role==="admin"?"ADMIN":"FREELANCER"}</div>
           </div>
           <main className="main-pad" style={{flex:1,overflow:"auto",padding:"24px 26px"}}>
@@ -487,174 +543,214 @@ function ResetPasswordPage({onDone}){
 
 // ─── LOGIN PAGE ───────────────────────────────────────────────────────────────
 function LoginPage({onLogin,onLoginSupabase}){
-  const [tab,setTab]=useState("login");
-  const [u,setU]=useState(""); const [p,setP]=useState(""); const [sp,setSp]=useState(false); const [loginErr,setLoginErr]=useState("");
-  const [rName,setRName]=useState(""); const [rEmail,setREmail]=useState(""); const [rPass,setRPass]=useState(""); const [rPass2,setRPass2]=useState("");
-  const [rSp,setRSp]=useState(false); const [rSp2,setRSp2]=useState(false); const [rErr,setRErr]=useState(""); const [rBusy,setRBusy]=useState(false); const [rConfirm,setRConfirm]=useState(false);
-
-  const sw=t=>{setTab(t);setLoginErr("");setRErr("");setFErr("");setShowForgot(false);setFSent(false);};
-  const iS={width:"100%",background:"#02040a",border:"1px solid #0d1018",color:"#e2e8f0",padding:"11px 40px",borderRadius:11,fontSize:14,outline:"none",fontFamily:"inherit"};
-  const iL={position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",color:"#1e2a3a"};
-  const iR={position:"absolute",right:11,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#1e2a3a",display:"flex"};
-  const lS={fontSize:10.5,fontWeight:700,color:"#334155",textTransform:"uppercase",letterSpacing:".1em",display:"block",marginBottom:6};
-
+  const [username,setUsername]=useState("");
+  const [p,setP]=useState("");
+  const [sp,setSp]=useState(false);
+  const [loginErr,setLoginErr]=useState("");
   const [lBusy,setLBusy]=useState(false);
-  const [registerSuccess,setRegisterSuccess]=useState(false);
-  const [fEmail,setFEmail]=useState(""); const [fSent,setFSent]=useState(false); const [fErr,setFErr]=useState(""); const [fBusy,setFBusy]=useState(false); const [showForgot,setShowForgot]=useState(false);
+  const [showUsers,setShowUsers]=useState(false);
+  // Lupa password state
+  const [showForgot,setShowForgot]=useState(false);
+  const [fEmail,setFEmail]=useState("");
+  const [fSent,setFSent]=useState(false);
+  const [fErr,setFErr]=useState("");
+  const [fBusy,setFBusy]=useState(false);
 
+  const iS={width:"100%",background:"#02040a",border:"1px solid #0d1018",color:"#e2e8f0",padding:"11px 40px",borderRadius:11,fontSize:14,outline:"none",outlineOffset:0,fontFamily:"inherit",transition:"border-color .18s",boxSizing:"border-box",display:"block"};
+  const iL={position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",color:"#334155"};
+  const iR={position:"absolute",right:11,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#334155",display:"flex"};
+  const lS={fontSize:10.5,fontWeight:700,color:"#475569",textTransform:"uppercase",letterSpacing:".1em",display:"block",marginBottom:6};
+
+  // Login: SELALU cek dummy users dulu, baru Supabase kalau tidak ketemu
   const doLogin=async()=>{
     setLoginErr(""); setLBusy(true);
+    const uname = username.trim().toLowerCase();
+    const pwd   = p;
     try{
+      // 1. Cek dummy users terlebih dahulu (prioritas utama)
+      const found = USERS[uname];
+      if(found){
+        if(found.pass === pwd){
+          onLogin(found.role, username.trim());
+          return;
+        } else {
+          throw new Error("Username atau password salah.");
+        }
+      }
+      // 2. Kalau bukan dummy user → coba Supabase (untuk email asli)
       if(supabase){
-        const{data:d,error}=await supabase.auth.signInWithPassword({email:u.trim(),password:p});
-        if(error) throw error;
+        const{data:d,error}=await supabase.auth.signInWithPassword({email:uname,password:pwd});
+        if(error){
+          const msg=error.message||"";
+          if(msg.includes("Invalid login credentials")||msg.includes("invalid_credentials"))
+            throw new Error("Username atau password salah.");
+          throw new Error(msg||"Login gagal.");
+        }
         const r=getRoleFromEmail(d.user.email);
         onLoginSupabase(r,d.user);
       } else {
-        const r=USERS[`${u}|${p}`];
-        if(r) onLogin(r); else throw new Error("Username atau password salah.");
+        throw new Error("Username atau password salah.");
       }
-    }catch(e){ setLoginErr(e.message==="Invalid login credentials"?"Email atau password salah.":e.message||"Login gagal."); }
+    }catch(e){ setLoginErr(e.message||"Login gagal."); }
     finally{ setLBusy(false); }
   };
 
   const doForgot=async()=>{
-    setFErr(""); if(!fEmail.trim()) return setFErr("Masukkan email kamu.");
+    setFErr("");
+    if(!fEmail.trim()) return setFErr("Masukkan email kamu.");
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fEmail.trim())) return setFErr("Format email tidak valid.");
     setFBusy(true);
     try{
-      if(supabase){ const{error}=await supabase.auth.resetPasswordForEmail(fEmail.trim(),{redirectTo:window.location.origin}); if(error) throw error; }
+      if(supabase){
+        const redirectUrl=window.location.href.split("#")[0].split("?")[0];
+        const{error}=await supabase.auth.resetPasswordForEmail(fEmail.trim(),{redirectTo:redirectUrl});
+        if(error) throw error;
+      }
       setFSent(true);
     }catch(e){ setFErr(e.message||"Gagal kirim email."); }
     finally{ setFBusy(false); }
   };
 
-  const doRegister=async()=>{
-    setRErr("");
-    if(!rName.trim()) return setRErr("Nama wajib diisi.");
-    if(!rEmail.trim()) return setRErr("Email wajib diisi.");
-    if(rPass.length<6) return setRErr("Password minimal 6 karakter.");
-    if(rPass!==rPass2) return setRErr("Konfirmasi password tidak cocok.");
-    setRBusy(true);
-    try{
-      if(supabase){
-        const{data:d,error}=await supabase.auth.signUp({email:rEmail.trim(),password:rPass,options:{data:{full_name:rName.trim()},emailRedirectTo:window.location.origin}});
-        if(error) throw error;
-      }
-      // Setelah register, arahkan ke tab login
-      setRConfirm(false);
-      setU(rEmail.trim());
-      setP("");
-      setRegisterSuccess(true);
-      sw("login");
-      setLoginErr("");
-    }catch(e){setRErr(e.message||"Registrasi gagal.");}
-    finally{setRBusy(false);}
-  };
-
-  const Tab=({id,label})=>(
-    <button onClick={()=>sw(id)} style={{flex:1,padding:"9px 4px",border:"none",borderRadius:9,cursor:"pointer",background:tab===id?"linear-gradient(135deg,#6366f1,#7c3aed)":"transparent",color:tab===id?"white":"#475569",fontWeight:700,fontSize:11.5,fontFamily:"inherit",transition:"all .18s",whiteSpace:"nowrap"}}>
-      {label}</button>
-  );
+  // Daftar dummy users untuk ditampilkan
+  const dummyList=[
+    {username:"admin",         pass:"admin123",   role:"Admin",      color:"#a78bfa"},
+    {username:"naraya.admin",  pass:"naraya2025", role:"Admin",      color:"#a78bfa"},
+    {username:"arya",          pass:"arya123",    role:"Freelancer", color:"#f59e0b"},
+    {username:"darul",         pass:"darul123",   role:"Freelancer", color:"#f59e0b"},
+    {username:"revi",          pass:"revi123",    role:"Freelancer", color:"#f59e0b"},
+    {username:"vika",          pass:"vika123",    role:"Freelancer", color:"#f59e0b"},
+    {username:"nessa",         pass:"nessa123",   role:"Freelancer", color:"#f59e0b"},
+    {username:"khaira",        pass:"khaira123",  role:"Freelancer", color:"#f59e0b"},
+  ];
 
   return(
-    <div style={{minHeight:"100vh",display:"flex",background:"#020408",position:"relative",overflow:"hidden"}}>
-      <div style={{position:"absolute",width:600,height:600,borderRadius:"50%",background:"radial-gradient(circle,#6366f118,transparent 65%)",top:-120,left:-80,pointerEvents:"none"}}/>
+    <div style={{height:"100vh",maxHeight:"100vh",display:"flex",background:"#0d0d0f",position:"relative",overflow:"hidden"}}>
+      {/* Glow blobs background */}
+      <div style={{position:"absolute",width:700,height:700,borderRadius:"50%",background:"radial-gradient(circle,#7c3aed18,transparent 60%)",top:"-150px",left:"-100px",pointerEvents:"none"}}/>
+      <div style={{position:"absolute",width:500,height:500,borderRadius:"50%",background:"radial-gradient(circle,#f9731614,transparent 60%)",bottom:"-100px",right:"80px",pointerEvents:"none"}}/>
+
+      {/* Left panel - desktop */}
       <div className="desk-only" style={{flex:1,display:"flex",flexDirection:"column",justifyContent:"center",padding:"60px 80px"}}>
-        <div style={{maxWidth:460}}>
-          <div style={{fontSize:10,fontWeight:700,letterSpacing:".16em",color:"#334155",textTransform:"uppercase",marginBottom:10}}>Welcome to</div>
-          <div style={{fontFamily:"'Syne',sans-serif",fontSize:50,fontWeight:800,lineHeight:1.02,marginBottom:14}}>
-            <span style={{background:"linear-gradient(135deg,#6366f1,#a78bfa,#ec4899)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>Naraya</span>
-            <span style={{color:"#e2e8f0"}}> One</span>
+        <div style={{maxWidth:480}}>
+          <div style={{fontSize:10,fontWeight:700,letterSpacing:".18em",color:"#475569",textTransform:"uppercase",marginBottom:12}}>Welcome to</div>
+          <div style={{fontFamily:"'Syne',sans-serif",fontSize:54,fontWeight:800,lineHeight:1,marginBottom:16}}>
+            <span style={{color:"#ffffff"}}>Naraya </span>
+            <span style={{background:"linear-gradient(135deg,#f59e0b,#f97316)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>One</span>
           </div>
-          <div style={{fontFamily:"'Syne',sans-serif",fontSize:14,fontWeight:600,color:"#6366f1",letterSpacing:".06em",marginBottom:14,textTransform:"uppercase"}}>Content Management Tracker System</div>
-          <div style={{fontSize:13.5,color:"#334155",lineHeight:1.8}}>Platform pelaporan dan pelacakan konten untuk tim freelancer.</div>
-          <div style={{marginTop:38,display:"flex",gap:28,flexWrap:"wrap"}}>
-            {[["📱","6 Akun Instagram"],["👥","6 Kreator"],["📊","Analytics"],["🎯","Target Tracking"]].map(([ic,lbl])=>(
-              <div key={lbl}><div style={{fontSize:20}}>{ic}</div><div style={{fontSize:10,color:"#334155",fontWeight:700,marginTop:4}}>{lbl}</div></div>
+          <div style={{fontSize:13,fontWeight:700,color:"#f97316",letterSpacing:".1em",textTransform:"uppercase",marginBottom:16}}>Content Management Tracker System</div>
+          <div style={{fontSize:13.5,color:"#64748b",lineHeight:1.8,marginBottom:40}}>Platform pelaporan dan pelacakan konten untuk tim freelancer Naraya.</div>
+          <div style={{display:"flex",gap:24,flexWrap:"wrap"}}>
+            {[["📱","6 Akun"],["👥","6 Kreator"],["📊","Analytics"],["🎯","Target"]].map(([ic,lbl])=>(
+              <div key={lbl} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+                <div style={{fontSize:22}}>{ic}</div>
+                <div style={{fontSize:10,color:"#475569",fontWeight:700}}>{lbl}</div>
+              </div>
             ))}
           </div>
         </div>
       </div>
-      <div style={{width:"100%",maxWidth:440,background:"#040811",borderLeft:"1px solid #0d1018",display:"flex",alignItems:"center",justifyContent:"center",padding:"36px 32px",overflowY:"auto"}}>
-        <div style={{width:"100%"}}>
-          <div style={{textAlign:"center",marginBottom:22}}>
-            <div style={{fontFamily:"'Syne',sans-serif",fontSize:26,fontWeight:800,marginBottom:2}}>
-              <span style={{background:"linear-gradient(135deg,#6366f1,#a78bfa)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>Naraya</span>
-              <span style={{color:"#e2e8f0"}}> One</span>
+
+      {/* Right panel - form (full width mobile, 440px desktop) */}
+      <div className="login-right-panel" style={{width:"100%",maxWidth:440,background:"#08090e",borderLeft:"1px solid #0f1117",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"clamp(20px,5vw,40px) clamp(16px,5vw,32px)",overflow:"hidden",height:"100vh",boxSizing:"border-box",flexShrink:0}}>
+        <div style={{width:"100%",boxSizing:"border-box",flexShrink:0}}>
+          {/* Logo */}
+          <div style={{textAlign:"center",marginBottom:28}}>
+            <div className="login-title-sm" style={{fontFamily:"'Syne',sans-serif",fontSize:28,fontWeight:800,marginBottom:2}}>
+              <span style={{color:"#ffffff"}}>Naraya </span>
+              <span style={{background:"linear-gradient(135deg,#f59e0b,#f97316)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>One</span>
             </div>
-            <div style={{fontSize:11.5,color:"#334155"}}>Content Management Tracker</div>
-          </div>
-          <div style={{display:"flex",gap:3,background:"#060a12",borderRadius:12,padding:4,marginBottom:24,border:"1px solid #0d1018"}}>
-            <Tab id="login" label="🔑 Masuk"/><Tab id="register" label="✍️ Daftar"/>
+            <div style={{fontSize:11,color:"#334155",letterSpacing:".06em"}}>Content Management Tracker</div>
           </div>
 
-          {tab==="login"&&(
-            <div style={{display:"flex",flexDirection:"column",gap:14}}>
-              {showForgot?(
-                fSent?(
-                  <div style={{textAlign:"center",padding:"20px 0"}}>
-                    <div style={{fontSize:40,marginBottom:10}}>📬</div>
-                    <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:17,color:"#f1f5f9",marginBottom:8}}>Email Terkirim!</div>
-                    <p style={{fontSize:12.5,color:"#64748b",lineHeight:1.7,marginBottom:14}}>Cek inbox <strong style={{color:"#6366f1"}}>{fEmail}</strong> untuk reset password.</p>
-                    <button onClick={()=>{setShowForgot(false);setFSent(false);setFEmail("");}} style={{background:"linear-gradient(135deg,#6366f1,#7c3aed)",color:"white",border:"none",padding:"9px 20px",borderRadius:10,cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"inherit"}}>Kembali ke Login →</button>
-                  </div>
-                ):(
-                  <>
-                    <div style={{textAlign:"center",marginBottom:4}}>
-                      <div style={{fontSize:28,marginBottom:6}}>🔑</div>
-                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:15,color:"#f1f5f9"}}>Lupa Password</div>
-                      <div style={{fontSize:12,color:"#475569",marginTop:3}}>Masukkan email kamu untuk reset password</div>
-                    </div>
-                    <div><label style={lS}>Email</label>
-                      <div style={{position:"relative"}}><span style={iL}><Icon name="link" size={15}/></span>
-                        <input type="email" value={fEmail} onChange={e=>setFEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doForgot()} placeholder="email@kamu.com" style={iS}/></div></div>
-                    {fErr&&<div style={{color:"#fca5a5",fontSize:12.5,padding:"10px 13px",background:"#1f0808",borderRadius:9,border:"1px solid #5c1a1a"}}>{fErr}</div>}
-                    <button onClick={doForgot} disabled={fBusy} style={{width:"100%",background:fBusy?"#1e2235":"linear-gradient(135deg,#6366f1,#7c3aed)",color:"white",border:"none",padding:"12px",borderRadius:12,cursor:fBusy?"not-allowed":"pointer",fontSize:14,fontWeight:700,fontFamily:"inherit",opacity:fBusy?0.7:1}}>{fBusy?"Mengirim...":"Kirim Link Reset →"}</button>
-                    <div style={{textAlign:"center"}}><button onClick={()=>{setShowForgot(false);setFErr("");}} style={{background:"none",border:"none",color:"#475569",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>← Kembali ke Login</button></div>
-                  </>
-                )
-              ):(
-                <>
-                  {registerSuccess&&<div style={{background:"#011f12",border:"1px solid #064e3b",borderRadius:10,padding:"11px 14px",fontSize:12.5,color:"#6ee7b7",display:"flex",alignItems:"center",gap:8}}><Icon name="check" size={14}/>✅ Akun berhasil dibuat! Silakan login sekarang.</div>}
-                  <div><label style={lS}>Email</label>
-                    <div style={{position:"relative"}}><span style={iL}><Icon name="link" size={15}/></span>
-                      <input type="email" value={u} onChange={e=>setU(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doLogin()} placeholder="email@kamu.com" style={iS}/></div></div>
-                  <div><label style={lS}>Password</label>
-                    <div style={{position:"relative"}}><span style={iL}><Icon name="lock" size={15}/></span>
-                      <input type={sp?"text":"password"} value={p} onChange={e=>setP(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doLogin()} placeholder="Masukkan password" style={iS}/>
-                      <button onClick={()=>setSp(!sp)} style={iR}><Icon name={sp?"eyeOff":"eye"} size={14}/></button></div></div>
-                  {loginErr&&<div style={{color:"#fca5a5",fontSize:12.5,padding:"10px 13px",background:"#1f0808",borderRadius:9,border:"1px solid #5c1a1a"}}>{loginErr}</div>}
-                  <button onClick={doLogin} disabled={lBusy} style={{marginTop:4,width:"100%",background:lBusy?"#1e2235":"linear-gradient(135deg,#6366f1,#7c3aed)",color:"white",border:"none",padding:"13px",borderRadius:12,cursor:lBusy?"not-allowed":"pointer",fontSize:15,fontWeight:700,fontFamily:"inherit",boxShadow:"0 8px 24px #6366f133",opacity:lBusy?0.7:1}}>{lBusy?"Masuk...":"Masuk →"}</button>
-                  <div style={{textAlign:"center"}}><button onClick={()=>{setShowForgot(true);setLoginErr("");}} style={{background:"none",border:"none",color:"#475569",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Lupa password? <span style={{color:"#6366f1",fontWeight:600}}>Reset di sini</span></button></div>
-                </>
-              )}
-            </div>
-          )}
-
-          {tab==="register"&&(
-            <div style={{display:"flex",flexDirection:"column",gap:13}}>
-              {rConfirm?(
-                <div style={{textAlign:"center",padding:"24px 0"}}>
-                  <div style={{fontSize:44,marginBottom:12}}>🎉</div>
-                  <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:18,color:"#f1f5f9",marginBottom:8}}>Pendaftaran Berhasil!</div>
-                  <p style={{fontSize:13,color:"#64748b",lineHeight:1.7,marginBottom:16}}>Akun untuk <strong style={{color:"#6366f1"}}>{rEmail}</strong> sudah dibuat. Silakan login dengan email dan password yang baru kamu daftarkan.</p>
-                  <div style={{background:"#0c1a0c",border:"1px solid #166534",borderRadius:10,padding:"10px 14px",fontSize:12,color:"#6ee7b7",marginBottom:16}}>✅ Akun berhasil dibuat</div>
-                  <button onClick={()=>sw("login")} style={{background:"linear-gradient(135deg,#6366f1,#7c3aed)",color:"white",border:"none",padding:"10px 24px",borderRadius:10,cursor:"pointer",fontSize:14,fontWeight:700,fontFamily:"inherit"}}>Ke Halaman Login →</button>
+          {showForgot?(
+            fSent?(
+              <div style={{textAlign:"center",padding:"20px 0"}}>
+                <div style={{fontSize:40,marginBottom:10}}>📬</div>
+                <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:17,color:"#f1f5f9",marginBottom:8}}>Email Terkirim!</div>
+                <p style={{fontSize:12.5,color:"#64748b",lineHeight:1.7,marginBottom:6}}>Link reset dikirim ke:</p>
+                <p style={{fontSize:13,fontWeight:700,color:"#f59e0b",marginBottom:14}}>{fEmail}</p>
+                <div style={{background:"#0d0e14",border:"1px solid #1e2535",borderRadius:10,padding:"11px 14px",fontSize:12,color:"#94a3b8",lineHeight:1.8,marginBottom:14,textAlign:"left"}}>
+                  <div style={{fontWeight:700,color:"#e2e8f0",marginBottom:6}}>Langkah selanjutnya:</div>
+                  <div>1. Buka inbox email kamu</div>
+                  <div>2. Klik link <strong style={{color:"#f59e0b"}}>Reset Password</strong></div>
+                  <div>3. Isi password baru</div>
+                  <div>4. Login dengan username + password baru</div>
                 </div>
-              ):(
-                <>
-                  <div><label style={lS}>Nama Lengkap</label><div style={{position:"relative"}}><span style={iL}><Icon name="user" size={15}/></span><input value={rName} onChange={e=>setRName(e.target.value)} placeholder="Nama kamu" style={iS}/></div></div>
-                  <div><label style={lS}>Email</label><div style={{position:"relative"}}><span style={iL}><Icon name="link" size={15}/></span><input type="email" value={rEmail} onChange={e=>setREmail(e.target.value)} placeholder="email@kamu.com" style={iS}/></div></div>
-                  <div><label style={lS}>Password</label><div style={{position:"relative"}}><span style={iL}><Icon name="lock" size={15}/></span><input type={rSp?"text":"password"} value={rPass} onChange={e=>setRPass(e.target.value)} placeholder="Min. 6 karakter" style={iS}/><button onClick={()=>setRSp(!rSp)} style={iR}><Icon name={rSp?"eyeOff":"eye"} size={14}/></button></div></div>
-                  <div><label style={lS}>Konfirmasi Password</label><div style={{position:"relative"}}><span style={iL}><Icon name="lock" size={15}/></span><input type={rSp2?"text":"password"} value={rPass2} onChange={e=>setRPass2(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doRegister()} placeholder="Ulangi password" style={{...iS,borderColor:rPass2&&rPass!==rPass2?"#ef4444":undefined}}/><button onClick={()=>setRSp2(!rSp2)} style={iR}><Icon name={rSp2?"eyeOff":"eye"} size={14}/></button></div>
-                    {rPass2&&rPass!==rPass2&&<div style={{color:"#f87171",fontSize:11.5,marginTop:4}}>Password tidak cocok</div>}</div>
-                  {rErr&&<div style={{color:"#fca5a5",fontSize:12.5,padding:"10px 13px",background:"#1f0808",borderRadius:9,border:"1px solid #5c1a1a"}}>{rErr}</div>}
-                  <button onClick={doRegister} disabled={rBusy} style={{marginTop:4,width:"100%",background:rBusy?"#1e2235":"linear-gradient(135deg,#6366f1,#7c3aed)",color:"white",border:"none",padding:"13px",borderRadius:12,cursor:rBusy?"not-allowed":"pointer",fontSize:15,fontWeight:700,fontFamily:"inherit",opacity:rBusy?0.7:1}}>
-                    {rBusy?"Mendaftarkan...":"Daftar & Masuk →"}</button>
-                  <div style={{textAlign:"center"}}><button onClick={()=>sw("login")} style={{background:"none",border:"none",color:"#475569",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Sudah punya akun? <span style={{color:"#6366f1",fontWeight:600}}>Masuk di sini</span></button></div>
-                  <div style={{background:"#0a0c14",border:"1px solid #151c28",borderRadius:10,padding:"11px 14px",fontSize:11.5,color:"#475569",lineHeight:1.6}}>ℹ️ Akun baru otomatis sebagai <strong style={{color:"#6366f1"}}>Freelancer</strong>. Untuk akses Admin, hubungi pengelola.</div>
-                </>
-              )}
+                <button onClick={()=>{setShowForgot(false);setFSent(false);setFEmail("");}} style={{background:"linear-gradient(135deg,#6366f1,#7c3aed)",color:"white",border:"none",padding:"9px 20px",borderRadius:10,cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"inherit"}}>← Kembali ke Login</button>
+              </div>
+            ):(
+              <div style={{display:"flex",flexDirection:"column",gap:14}}>
+                <div style={{textAlign:"center",marginBottom:4}}>
+                  <div style={{fontSize:28,marginBottom:6}}>🔐</div>
+                  <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:15,color:"#f1f5f9"}}>Lupa Password</div>
+                  <div style={{fontSize:12,color:"#475569",marginTop:3}}>Masukkan email pribadi yang terdaftar</div>
+                </div>
+                <div><label style={lS}>Email Pribadi</label>
+                  <div style={{position:"relative"}}><span style={iL}><Icon name="user" size={15}/></span>
+                    <input type="email" value={fEmail} onChange={e=>setFEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doForgot()} placeholder="email@kamu.com" style={iS}/></div>
+                  <div style={{fontSize:11,color:"#334155",marginTop:5}}>Link reset akan dikirim ke email ini</div>
+                </div>
+                {fErr&&<div style={{color:"#fca5a5",fontSize:12.5,padding:"10px 13px",background:"#1f0808",borderRadius:9,border:"1px solid #5c1a1a"}}>{fErr}</div>}
+                <button onClick={doForgot} disabled={fBusy} style={{width:"100%",background:fBusy?"#1e2235":"linear-gradient(135deg,#6366f1,#7c3aed)",color:"white",border:"none",padding:"12px",borderRadius:12,cursor:fBusy?"not-allowed":"pointer",fontSize:14,fontWeight:700,fontFamily:"inherit",opacity:fBusy?0.7:1}}>{fBusy?"Mengirim...":"📨 Kirim Link Reset"}</button>
+                <div style={{textAlign:"center"}}><button onClick={()=>{setShowForgot(false);setFErr("");}} style={{background:"none",border:"none",color:"#475569",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>← Kembali ke Login</button></div>
+              </div>
+            )
+          ):(
+            <div style={{display:"flex",flexDirection:"column",gap:16}}>
+              {/* Username */}
+              <div>
+                <label style={lS}>Username</label>
+                <div style={{position:"relative"}}>
+                  <span style={iL}><Icon name="user" size={15}/></span>
+                  <input type="text" value={username} onChange={e=>setUsername(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doLogin()} placeholder="Masukkan username" style={iS} autoComplete="username"/>
+                </div>
+              </div>
+              {/* Password */}
+              <div>
+                <label style={lS}>Password</label>
+                <div style={{position:"relative"}}>
+                  <span style={iL}><Icon name="lock" size={15}/></span>
+                  <input type={sp?"text":"password"} value={p} onChange={e=>setP(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doLogin()} placeholder="Masukkan password" style={iS} autoComplete="current-password"/>
+                  <button onClick={()=>setSp(!sp)} style={iR}><Icon name={sp?"eyeOff":"eye"} size={14}/></button>
+                </div>
+              </div>
+
+              {loginErr&&<div style={{color:"#fca5a5",fontSize:12.5,padding:"10px 13px",background:"#1f0808",borderRadius:9,border:"1px solid #5c1a1a",display:"flex",alignItems:"center",gap:7}}><Icon name="warn" size={13}/>{loginErr}</div>}
+
+              <button onClick={doLogin} disabled={lBusy} style={{width:"100%",background:lBusy?"#1e2235":"linear-gradient(135deg,#f59e0b,#f97316)",color:"white",border:"none",padding:"13px",borderRadius:12,cursor:lBusy?"not-allowed":"pointer",fontSize:15,fontWeight:700,fontFamily:"inherit",boxShadow:"0 8px 24px #f9731630",opacity:lBusy?0.7:1,transition:"all .18s"}}>
+                {lBusy?"Masuk...":"Masuk →"}
+              </button>
+
+              <div style={{textAlign:"center"}}>
+                <button onClick={()=>{setShowForgot(true);setLoginErr("");}} style={{background:"none",border:"none",color:"#475569",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+                  Lupa password? <span style={{color:"#f59e0b",fontWeight:600}}>Reset di sini</span>
+                </button>
+              </div>
+
+              {/* Tombol lihat daftar user */}
+              <div style={{borderTop:"1px solid #0f1117",paddingTop:16}}>
+                <button onClick={()=>setShowUsers(!showUsers)} style={{width:"100%",background:"#0d1018",border:"1px solid #1e2535",color:"#64748b",padding:"9px",borderRadius:10,cursor:"pointer",fontSize:12,fontWeight:600,fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6,transition:"all .15s"}}>
+                  <Icon name="user" size={12}/> {showUsers?"Sembunyikan":"Lihat"} Daftar Akun
+                </button>
+                {showUsers&&(
+                  <div style={{marginTop:10,background:"#060a12",border:"1px solid #0f1117",borderRadius:12,overflow:"hidden"}}>
+                    <div style={{padding:"8px 12px",borderBottom:"1px solid #0f1117",fontSize:9.5,fontWeight:700,color:"#334155",textTransform:"uppercase",letterSpacing:".1em"}}>Akun yang tersedia</div>
+                    {dummyList.map((u,i)=>(
+                      <button key={u.username} onClick={()=>{setUsername(u.username);setP(u.pass);setShowUsers(false);}}
+                        style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"9px 12px",background:"none",border:"none",borderBottom:i<dummyList.length-1?"1px solid #0a0e16":"none",cursor:"pointer",transition:"background .12s",textAlign:"left"}}
+                        onMouseEnter={e=>e.currentTarget.style.background="#0d1018"}
+                        onMouseLeave={e=>e.currentTarget.style.background="none"}>
+                        <div style={{display:"flex",alignItems:"center",gap:8}}>
+                          <div style={{width:6,height:6,borderRadius:"50%",background:u.color,flexShrink:0}}/>
+                          <span style={{fontSize:13,fontWeight:600,color:"#c8d3e0"}}>{u.username}</span>
+                          <span style={{fontSize:11,color:"#334155"}}>/ {u.pass}</span>
+                        </div>
+                        <span style={{fontSize:9.5,fontWeight:700,padding:"2px 7px",borderRadius:999,background:u.color+"22",color:u.color}}>{u.role}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -766,9 +862,9 @@ function DashboardPage({ data, updData, showToast, setPage }) {
         <div style={{ height:14, background:"#151c28", borderRadius:999, overflow:"hidden", marginBottom:7 }}>
           <div style={{ height:"100%", width:`${pct}%`, background:`linear-gradient(90deg,${bc},${bc}bb)`, borderRadius:999, transition:"width .8s ease", boxShadow:`0 0 14px ${bc}44` }}/>
         </div>
-        <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, color:"#334155" }}>
-          <span>{pct >= 100 ? "🎉 Target tercapai!" : pct >= 75 ? "💪 Hampir sampai!" : pct >= 50 ? "⚡ Terus semangat!" : "🚀 Yuk tingkatkan!"}</span>
-          <span>Sisa: {Math.max(0, target - thisMonth.length).toLocaleString()} video</span>
+        <div style={{ display:"flex", justifyContent:"space-between", fontSize:11 }}>
+          <span style={{color:"#f59e0b",fontWeight:600}}>{pct >= 100 ? "🎉 Target tercapai!" : pct >= 75 ? "💪 Hampir sampai!" : pct >= 50 ? "⚡ Terus semangat!" : "🚀 Yuk tingkatkan!"}</span>
+          <span style={{color:"#94a3b8",fontWeight:500}}>Sisa: {Math.max(0, target - thisMonth.length).toLocaleString()} video</span>
         </div>
       </div>
 
@@ -829,9 +925,13 @@ function DashboardPage({ data, updData, showToast, setPage }) {
 }
 
 // ─── INPUT PAGE ───────────────────────────────────────────────────────────────
-function InputPage({ data, addPost, showToast, setPage }) {
+function InputPage({ data, addPost, showToast, setPage, loggedUsername, role }) {
   const td = todayStr();
-  const [f, setF] = useState({ date:td, creator:"", account:"", theme:"", link:"", status:"" });
+  // Auto-isi creator dari username yang login (kapitalisasi huruf pertama)
+  const autoCreator = loggedUsername ? loggedUsername.charAt(0).toUpperCase() + loggedUsername.slice(1) : "";
+  // Cek apakah autoCreator ada di daftar creators
+  const matchedCreator = (data.creators||[]).find(c => c.toLowerCase() === autoCreator.toLowerCase()) || "";
+  const [f, setF] = useState({ date:td, creator:matchedCreator, account:"", theme:"", link:"", status:"" });
   const [er, setEr] = useState({});
   
   const set = (k, v) => { 
@@ -854,7 +954,7 @@ function InputPage({ data, addPost, showToast, setPage }) {
   function submit() {
     if (!validate()) return;
     addPost({ id: Date.now().toString(), ...f, createdAt: new Date().toISOString() });
-    setF({ date:td, creator:"", account:"", theme:"", link:"", status:"" });
+    setF({ date:td, creator:matchedCreator, account:"", theme:"", link:"", status:"" });
     showToast("Laporan tersimpan! ✅");
     setPage("calendar");
   }
@@ -876,10 +976,18 @@ function InputPage({ data, addPost, showToast, setPage }) {
           <div className="g2">
             <div>
               <label className="lbl">👤 Nama Pembuat Konten</label>
-              <select value={f.creator} onChange={e => set("creator", e.target.value)} className="inp" style={{ borderColor:er.creator?"#ef4444":"" }}>
-                <option value="">-- Pilih --</option>
-                {(data.creators||[]).map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
+              {matchedCreator && role !== "admin" ? (
+                <div className="inp" style={{display:"flex",alignItems:"center",gap:8,cursor:"default",opacity:0.9}}>
+                  <span style={{fontSize:16}}>👤</span>
+                  <span style={{fontWeight:600,color:"#e2e8f0"}}>{matchedCreator}</span>
+                  <span style={{fontSize:10,color:"#475569",marginLeft:"auto"}}>otomatis</span>
+                </div>
+              ) : (
+                <select value={f.creator} onChange={e => set("creator", e.target.value)} className="inp" style={{ borderColor:er.creator?"#ef4444":"" }}>
+                  <option value="">-- Pilih --</option>
+                  {(data.creators||[]).map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              )}
               <Err msg={er.creator}/>
             </div>
             <div>
@@ -1066,7 +1174,7 @@ function ProductivityPage({ data, updData, showToast, setCsvModal }) {
     <div>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20, flexWrap:"wrap", gap:10 }}>
         <div><h1 style={{ fontFamily:"'Syne',sans-serif", fontSize:24, fontWeight:800, color:"#f1f5f9" }}>Produktivitas</h1><p style={{ color:"#334155", fontSize:13, marginTop:2 }}>{filt.length} konten dalam periode ini</p></div>
-        <button className="btn-s" onClick={() => exportCSV([["Nama","Jumlah"],...byC], `produktivitas.csv`, csv => setCsvModal(csv))}><Icon name="dl" size={13}/> Export</button>
+
       </div>
       {/* TARGET */}
       <div className="card" style={{ marginBottom:14, border:`1px solid ${bc}33` }}>
@@ -1093,9 +1201,9 @@ function ProductivityPage({ data, updData, showToast, setCsvModal }) {
         <div style={{ height:12, background:"#151c28", borderRadius:999, overflow:"hidden", marginBottom:6 }}>
           <div style={{ height:"100%", width:`${pct}%`, background:`linear-gradient(90deg,${bc},${bc}bb)`, borderRadius:999, transition:"width .8s ease", boxShadow:`0 0 12px ${bc}44` }}/>
         </div>
-        <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, color:"#334155" }}>
-          <span>{pct >= 100 ? "🎉 Tercapai!" : pct >= 75 ? "💪 Hampir!" : pct >= 50 ? "⚡ Semangat!" : "🚀 Tingkatkan!"}</span>
-          <span>Sisa: {Math.max(0, tgt - thisMPosted).toLocaleString()}</span>
+        <div style={{ display:"flex", justifyContent:"space-between", fontSize:11 }}>
+          <span style={{color:"#f59e0b",fontWeight:600}}>{pct >= 100 ? "🎉 Tercapai!" : pct >= 75 ? "💪 Hampir!" : pct >= 50 ? "⚡ Semangat!" : "🚀 Tingkatkan!"}</span>
+          <span style={{color:"#94a3b8",fontWeight:500}}>Sisa: {Math.max(0, tgt - thisMPosted).toLocaleString()}</span>
         </div>
       </div>
       {/* FILTER */}
@@ -1230,7 +1338,7 @@ function HistoryPage({ data, role, editPost, delPost, showToast, setCsvModal }) 
     <div>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20, flexWrap:"wrap", gap:10 }}>
         <div><h1 style={{ fontFamily:"'Syne',sans-serif", fontSize:24, fontWeight:800, color:"#f1f5f9" }}>History Laporan</h1><p style={{ color:"#334155", fontSize:13, marginTop:2 }}>{filt.length} dari {(data.posts||[]).length} laporan</p></div>
-        <button className="btn-s" onClick={() => exportCSV([["Tanggal","Pembuat","Akun","Tema","Status","Link"],...filt.map(p=>[p.date,p.creator,p.account,p.theme,p.status||"",p.link])],`history.csv`, csv=>setCsvModal(csv))}><Icon name="dl" size={13}/> Export</button>
+
       </div>
       <div className="card" style={{ marginBottom:14 }}>
         <div style={{ display:"flex", gap:10, flexWrap:"wrap", alignItems:"flex-end" }}>
