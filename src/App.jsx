@@ -17,19 +17,48 @@ const DD = {
   themes:   ["Edukasi","Promosi","Hiburan","Informasi","Tutorial","Motivasi","Lifestyle","Review"],
 };
 
-// ─── DUMMY USERS (username → {password, role}) ───────────────────────────────
-const USERS = {
-  // Admin
-  "admin":           {pass:"admin123",    role:"admin"},
-  "naraya.admin":    {pass:"naraya2025",  role:"admin"},
-  // Freelancer / Kreator
-  "arya":            {pass:"arya123",     role:"freelancer"},
-  "darul":           {pass:"darul123",    role:"freelancer"},
-  "revi":            {pass:"revi123",     role:"freelancer"},
-  "vika":            {pass:"vika123",     role:"freelancer"},
-  "nessa":           {pass:"nessa123",    role:"freelancer"},
-  "khaira":          {pass:"khaira123",   role:"freelancer"},
+// ─── USERS — disimpan di Supabase (id=2) + localStorage backup ──────────────
+const USERS_KEY = "naraya_users_v3";
+const DEFAULT_USERS = {
+  "admin": {pass:"admin123", role:"admin", name:"Admin"},
 };
+function sanitizeUsers(parsed){
+  const out={};
+  for(const [k,v] of Object.entries(parsed||{})){
+    if(typeof v==="object"&&v!==null&&v.pass&&v.role)
+      out[k]={pass:v.pass,role:v.role,name:v.name||k};
+  }
+  if(!out["admin"]) out["admin"]={...DEFAULT_USERS["admin"]};
+  return out;
+}
+function loadUsers(){
+  try{
+    const s=localStorage.getItem(USERS_KEY);
+    if(s){const p=JSON.parse(s);const u=sanitizeUsers(p);return u;}
+  }catch{}
+  return{...DEFAULT_USERS};
+}
+async function loadUsersFromDB(){
+  try{
+    if(supabase){
+      const{data:row,error}=await supabase.from("naraya_settings").select("content").eq("id",2).single();
+      if(!error&&row?.content){
+        const u=sanitizeUsers(row.content);
+        localStorage.setItem(USERS_KEY,JSON.stringify(u));
+        return u;
+      }
+    }
+  }catch{}
+  return loadUsers();
+}
+async function saveUsersToDB(u){
+  try{ localStorage.setItem(USERS_KEY,JSON.stringify(u)); }catch{}
+  try{
+    if(supabase)
+      await supabase.from("naraya_settings").upsert({id:2,content:u},{onConflict:"id"});
+  }catch{}
+}
+// Jangan cache USERS — selalu baca fresh saat dibutuhkan
 const ADMIN_EMAILS = ["admin@naraya.one","naraya.admin@gmail.com"];
 function getRoleFromEmail(email) {
   return (!email || !ADMIN_EMAILS.includes(email.toLowerCase())) ? "freelancer" : "admin";
@@ -148,7 +177,6 @@ body:has(.login-right-panel){overflow:hidden!important}
 .login-right-panel *{
   box-sizing:border-box;
 }
-/* Hapus semua browser default focus ring */
 .login-right-panel button:focus,
 .login-right-panel input:focus,
 .login-right-panel select:focus{
@@ -159,17 +187,28 @@ body:has(.login-right-panel){overflow:hidden!important}
 @media(max-width:768px){
   .login-right-panel{
     max-width:100%!important;
+    width:100%!important;
     border-left:none!important;
     height:100vh!important;
     min-height:unset!important;
-    justify-content:center!important;
-    padding:28px 20px!important;
-    overflow:hidden!important;
+    justify-content:flex-start!important;
+    padding:0!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+  }
+  .login-mob-inner{
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    padding:32px 24px 40px;
+    width:100%;
+    box-sizing:border-box;
   }
   .login-title-sm{font-size:22px!important}
 }
 @media(max-width:400px){
-  .login-right-panel{padding:20px 16px!important}
+  .login-mob-inner{padding:24px 18px 36px!important}
   .login-title-sm{font-size:19px!important}
 }
 `;
@@ -405,7 +444,7 @@ export default function App(){
   );
   if(!data) return <Spinner text="Memuat data..."/>;
 
-  const adminNav=[{id:"home",label:"Dashboard",icon:"home"},{id:"input",label:"Input Laporan",icon:"plus"},{id:"calendar",label:"Kalender Konten",icon:"cal"},{id:"productivity",label:"Produktivitas",icon:"chart"},{id:"settings",label:"Pengaturan",icon:"cog"},{id:"history",label:"History",icon:"hist"}];
+  const adminNav=[{id:"home",label:"Dashboard",icon:"home"},{id:"input",label:"Input Laporan",icon:"plus"},{id:"calendar",label:"Kalender Konten",icon:"cal"},{id:"productivity",label:"Produktivitas",icon:"chart"},{id:"settings",label:"Pengaturan",icon:"cog"},{id:"history",label:"History",icon:"hist"},{id:"users",label:"Kelola User",icon:"user"}];
   const freelancerNav=[{id:"input",label:"Input Laporan",icon:"plus"},{id:"calendar",label:"Kalender Konten",icon:"cal"}];
   const nav=role==="admin"?adminNav:freelancerNav;
   // Normalize data — pastikan semua array ada walau data dari localStorage tidak lengkap
@@ -457,6 +496,7 @@ export default function App(){
             {page==="productivity"&&<ProductivityPage {...props}/>}
             {page==="settings"&&role==="admin"&&<SettingsPage {...props}/>}
             {page==="history"&&<HistoryPage {...props}/>}
+            {page==="users"&&role==="admin"&&<UsersPage showToast={showToast}/>}
           </main>
         </div>
       </div>
@@ -561,14 +601,15 @@ function LoginPage({onLogin,onLoginSupabase}){
   const iR={position:"absolute",right:11,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#334155",display:"flex"};
   const lS={fontSize:10.5,fontWeight:700,color:"#475569",textTransform:"uppercase",letterSpacing:".1em",display:"block",marginBottom:6};
 
-  // Login: SELALU cek dummy users dulu, baru Supabase kalau tidak ketemu
+  // Login: baca users dari Supabase/localStorage (selalu fresh)
   const doLogin=async()=>{
     setLoginErr(""); setLBusy(true);
     const uname = username.trim().toLowerCase();
     const pwd   = p;
     try{
-      // 1. Cek dummy users terlebih dahulu (prioritas utama)
-      const found = USERS[uname];
+      // 1. Baca users terbaru dari Supabase/localStorage
+      const currentUsers = await loadUsersFromDB();
+      const found = currentUsers[uname];
       if(found){
         if(found.pass === pwd){
           onLogin(found.role, username.trim());
@@ -577,7 +618,7 @@ function LoginPage({onLogin,onLoginSupabase}){
           throw new Error("Username atau password salah.");
         }
       }
-      // 2. Kalau bukan dummy user → coba Supabase (untuk email asli)
+      // 2. Kalau tidak ada → coba Supabase Auth (untuk email asli)
       if(supabase){
         const{data:d,error}=await supabase.auth.signInWithPassword({email:uname,password:pwd});
         if(error){
@@ -611,17 +652,15 @@ function LoginPage({onLogin,onLoginSupabase}){
     finally{ setFBusy(false); }
   };
 
-  // Daftar dummy users untuk ditampilkan
-  const dummyList=[
-    {username:"admin",         pass:"admin123",   role:"Admin",      color:"#a78bfa"},
-    {username:"naraya.admin",  pass:"naraya2025", role:"Admin",      color:"#a78bfa"},
-    {username:"arya",          pass:"arya123",    role:"Freelancer", color:"#f59e0b"},
-    {username:"darul",         pass:"darul123",   role:"Freelancer", color:"#f59e0b"},
-    {username:"revi",          pass:"revi123",    role:"Freelancer", color:"#f59e0b"},
-    {username:"vika",          pass:"vika123",    role:"Freelancer", color:"#f59e0b"},
-    {username:"nessa",         pass:"nessa123",   role:"Freelancer", color:"#f59e0b"},
-    {username:"khaira",        pass:"khaira123",  role:"Freelancer", color:"#f59e0b"},
-  ];
+  // Daftar akun SELALU dibaca fresh dari localStorage setiap render
+  const [userListVersion, setUserListVersion] = useState(0);
+  const dummyList = Object.entries(loadUsers()).map(([uname, udata]) => ({
+    username: uname,
+    pass:     udata.pass||"",
+    role:     udata.role==="admin" ? "Admin" : "Freelancer",
+    color:    udata.role==="admin" ? "#a78bfa" : "#f59e0b",
+    name:     udata.name||uname,
+  }));
 
   return(
     <div style={{height:"100vh",maxHeight:"100vh",display:"flex",background:"#0d0d0f",position:"relative",overflow:"hidden"}}>
@@ -652,7 +691,7 @@ function LoginPage({onLogin,onLoginSupabase}){
 
       {/* Right panel - form (full width mobile, 440px desktop) */}
       <div className="login-right-panel" style={{width:"100%",maxWidth:440,background:"#08090e",borderLeft:"1px solid #0f1117",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"clamp(20px,5vw,40px) clamp(16px,5vw,32px)",overflow:"hidden",height:"100vh",boxSizing:"border-box",flexShrink:0}}>
-        <div style={{width:"100%",boxSizing:"border-box",flexShrink:0}}>
+        <div className="login-mob-inner" style={{width:"100%",boxSizing:"border-box",flexShrink:0}}>
           {/* Logo */}
           <div style={{textAlign:"center",marginBottom:28}}>
             <div className="login-title-sm" style={{fontFamily:"'Syne',sans-serif",fontSize:28,fontWeight:800,marginBottom:2}}>
@@ -735,15 +774,17 @@ function LoginPage({onLogin,onLoginSupabase}){
                 {showUsers&&(
                   <div style={{marginTop:10,background:"#060a12",border:"1px solid #0f1117",borderRadius:12,overflow:"hidden"}}>
                     <div style={{padding:"8px 12px",borderBottom:"1px solid #0f1117",fontSize:9.5,fontWeight:700,color:"#334155",textTransform:"uppercase",letterSpacing:".1em"}}>Akun yang tersedia</div>
-                    {dummyList.map((u,i)=>(
+                    {dummyList.length===0?(
+                      <div style={{padding:"14px 12px",textAlign:"center",color:"#334155",fontSize:12}}>Belum ada akun. Admin perlu tambahkan dulu.</div>
+                    ):dummyList.map((u,i)=>(
                       <button key={u.username} onClick={()=>{setUsername(u.username);setP(u.pass);setShowUsers(false);}}
                         style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"9px 12px",background:"none",border:"none",borderBottom:i<dummyList.length-1?"1px solid #0a0e16":"none",cursor:"pointer",transition:"background .12s",textAlign:"left"}}
                         onMouseEnter={e=>e.currentTarget.style.background="#0d1018"}
                         onMouseLeave={e=>e.currentTarget.style.background="none"}>
                         <div style={{display:"flex",alignItems:"center",gap:8}}>
                           <div style={{width:6,height:6,borderRadius:"50%",background:u.color,flexShrink:0}}/>
-                          <span style={{fontSize:13,fontWeight:600,color:"#c8d3e0"}}>{u.username}</span>
-                          <span style={{fontSize:11,color:"#334155"}}>/ {u.pass}</span>
+                          <span style={{fontSize:13,fontWeight:600,color:"#c8d3e0"}}>{u.name||u.username}</span>
+                          <span style={{fontSize:11,color:"#475569"}}>@{u.username}</span>
                         </div>
                         <span style={{fontSize:9.5,fontWeight:700,padding:"2px 7px",borderRadius:999,background:u.color+"22",color:u.color}}>{u.role}</span>
                       </button>
@@ -925,12 +966,26 @@ function DashboardPage({ data, updData, showToast, setPage }) {
 }
 
 // ─── INPUT PAGE ───────────────────────────────────────────────────────────────
-function InputPage({ data, addPost, showToast, setPage, loggedUsername, role }) {
+function InputPage({ data, addPost, updData, showToast, setPage, loggedUsername, role }) {
   const td = todayStr();
-  // Auto-isi creator dari username yang login (kapitalisasi huruf pertama)
-  const autoCreator = loggedUsername ? loggedUsername.charAt(0).toUpperCase() + loggedUsername.slice(1) : "";
-  // Cek apakah autoCreator ada di daftar creators
-  const matchedCreator = (data.creators||[]).find(c => c.toLowerCase() === autoCreator.toLowerCase()) || "";
+
+  // Ambil nama lengkap dari data Kelola User (bukan hanya username)
+  const getUserDisplayName = () => {
+    if (!loggedUsername) return "";
+    // Cek di localStorage users — ambil nama lengkap
+    const allUsers = loadUsers();
+    const ukey = loggedUsername.trim().toLowerCase();
+    if (allUsers[ukey]?.name) return allUsers[ukey].name;
+    // Fallback: kapitalisasi username
+    return loggedUsername.charAt(0).toUpperCase() + loggedUsername.slice(1);
+  };
+
+  const userDisplayName = getUserDisplayName();
+
+  // Cek apakah nama ada di daftar creators
+  // Kalau tidak ada → pakai nama langsung (tanpa harus ada di list)
+  const matchedCreator = role !== "admin" ? userDisplayName : "";
+
   const [f, setF] = useState({ date:td, creator:matchedCreator, account:"", theme:"", link:"", status:"" });
   const [er, setEr] = useState({});
   
@@ -953,6 +1008,10 @@ function InputPage({ data, addPost, showToast, setPage, loggedUsername, role }) 
   
   function submit() {
     if (!validate()) return;
+    // Auto-tambah nama ke creators list kalau belum ada (untuk freelancer baru)
+    if (matchedCreator && !(data.creators||[]).some(c => c.toLowerCase() === matchedCreator.toLowerCase())) {
+      updData(d => ({ ...d, creators: [...(d.creators||[]), matchedCreator] }));
+    }
     addPost({ id: Date.now().toString(), ...f, createdAt: new Date().toISOString() });
     setF({ date:td, creator:matchedCreator, account:"", theme:"", link:"", status:"" });
     showToast("Laporan tersimpan! ✅");
@@ -1452,6 +1511,226 @@ function SettingsPage({ data, updData, showToast }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+// ─── USERS PAGE (Admin only) ──────────────────────────────────────────────────
+function UsersPage({ showToast }) {
+  const [users, setUsers] = useState(() => loadUsers());
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editTarget, setEditTarget] = useState(null);
+  const [form, setForm] = useState({ username:"", name:"", pass:"", role:"freelancer" });
+  const [formErr, setFormErr] = useState({});
+  const [showPass, setShowPass] = useState({});
+  const [confirmDel, setConfirmDel] = useState(null);
+
+  // Load dari Supabase saat pertama buka
+  useEffect(()=>{
+    loadUsersFromDB().then(u=>{ setUsers(u); setLoading(false); });
+  },[]);
+
+  // Simpan ke Supabase + localStorage + update state
+  const persist = async(u) => {
+    setUsers({...u});
+    await saveUsersToDB(u);
+  };
+
+  const openAdd = () => {
+    setEditTarget(null);
+    setForm({ username:"", name:"", pass:"", role:"freelancer" });
+    setFormErr({});
+    setShowForm(true);
+  };
+
+  const openEdit = (uname) => {
+    const u = users[uname];
+    setEditTarget(uname);
+    setForm({ username:uname, name:u.name||uname, pass:u.pass, role:u.role });
+    setFormErr({});
+    setShowForm(true);
+  };
+
+  const validate = () => {
+    const e = {};
+    if (!form.username.trim()) e.username = "Username wajib diisi";
+    if (/\s/.test(form.username)) e.username = "Username tidak boleh ada spasi";
+    if (!form.name.trim()) e.name = "Nama wajib diisi";
+    if (!form.pass.trim()) e.pass = "Password wajib diisi";
+    if (form.pass.length < 4) e.pass = "Password minimal 4 karakter";
+    if (!editTarget && users[form.username.trim().toLowerCase()])
+      e.username = "Username sudah dipakai";
+    setFormErr(e);
+    return !Object.keys(e).length;
+  };
+
+  const saveForm = async() => {
+    if (!validate()) return;
+    const uname = form.username.trim().toLowerCase();
+    const updated = { ...users };
+    if (editTarget && editTarget !== uname) delete updated[editTarget];
+    updated[uname] = { pass:form.pass.trim(), role:form.role, name:form.name.trim() };
+    await persist(updated);
+    setShowForm(false);
+    showToast(editTarget ? "User berhasil diperbarui ✅" : "User baru berhasil ditambahkan ✅");
+  };
+
+  const deleteUser = async(uname) => {
+    const updated = { ...users };
+    delete updated[uname];
+    await persist(updated);
+    setConfirmDel(null);
+    showToast("User berhasil dihapus 🗑️");
+  };
+
+  const iS = { width:"100%", background:"#02040a", border:"1px solid #0d1018", color:"#e2e8f0", padding:"10px 14px", borderRadius:10, fontSize:13.5, outline:"none", fontFamily:"inherit", boxSizing:"border-box" };
+  const lS = { fontSize:10.5, fontWeight:700, color:"#475569", textTransform:"uppercase", letterSpacing:".1em", display:"block", marginBottom:6 };
+
+  const adminUsers = Object.entries(users).filter(([,v]) => v.role === "admin");
+  const freeUsers  = Object.entries(users).filter(([,v]) => v.role === "freelancer");
+
+  return (
+    <div>
+      <div style={{ marginBottom:20, display:"flex", justifyContent:"space-between", alignItems:"flex-start", flexWrap:"wrap", gap:10 }}>
+        <div>
+          <div style={{ fontFamily:"'Syne',sans-serif", fontSize:22, fontWeight:800, color:"#f1f5f9", marginBottom:4 }}>👥 Kelola User</div>
+          <div style={{ fontSize:13, color:"#475569" }}>Tambah, edit, atau hapus akun freelancer & admin</div>
+        </div>
+        <button onClick={openAdd} style={{ background:"linear-gradient(135deg,#f59e0b,#f97316)", color:"white", border:"none", padding:"10px 18px", borderRadius:10, cursor:"pointer", fontSize:13.5, fontWeight:700, fontFamily:"inherit", display:"flex", alignItems:"center", gap:7 }}>
+          ＋ Tambah User
+        </button>
+      </div>
+
+      {/* Modal Form */}
+      {showForm && (
+        <div className="ov" onClick={()=>setShowForm(false)}>
+          <div className="mod" style={{ maxWidth:420 }} onClick={e=>e.stopPropagation()}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 }}>
+              <div style={{ fontFamily:"'Syne',sans-serif", fontWeight:700, fontSize:16, color:"#f1f5f9" }}>
+                {editTarget ? "✏️ Edit User" : "➕ Tambah User Baru"}
+              </div>
+              <button onClick={()=>setShowForm(false)} style={{ background:"none", border:"none", color:"#475569", cursor:"pointer", fontSize:18 }}>✕</button>
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:13 }}>
+              {/* Username */}
+              <div>
+                <label style={lS}>Username</label>
+                <input value={form.username} onChange={e=>setForm(p=>({...p,username:e.target.value}))}
+                  placeholder="contoh: budi" style={{...iS, borderColor:formErr.username?"#ef4444":""}}
+                  disabled={!!editTarget}/>
+                {formErr.username && <div style={{color:"#f87171",fontSize:11.5,marginTop:4}}>{formErr.username}</div>}
+                {editTarget && <div style={{fontSize:11,color:"#334155",marginTop:4}}>Username tidak bisa diubah</div>}
+              </div>
+              {/* Nama */}
+              <div>
+                <label style={lS}>Nama Lengkap</label>
+                <input value={form.name} onChange={e=>setForm(p=>({...p,name:e.target.value}))}
+                  placeholder="contoh: Budi Santoso" style={{...iS, borderColor:formErr.name?"#ef4444":""}}/>
+                {formErr.name && <div style={{color:"#f87171",fontSize:11.5,marginTop:4}}>{formErr.name}</div>}
+              </div>
+              {/* Password */}
+              <div>
+                <label style={lS}>Password</label>
+                <div style={{position:"relative"}}>
+                  <input type={showPass.form?"text":"password"} value={form.pass}
+                    onChange={e=>setForm(p=>({...p,pass:e.target.value}))}
+                    placeholder="Min. 4 karakter" style={{...iS, paddingRight:40, borderColor:formErr.pass?"#ef4444":""}}/>
+                  <button onClick={()=>setShowPass(p=>({...p,form:!p.form}))}
+                    style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#475569",display:"flex"}}>
+                    <Icon name={showPass.form?"eyeOff":"eye"} size={14}/>
+                  </button>
+                </div>
+                {formErr.pass && <div style={{color:"#f87171",fontSize:11.5,marginTop:4}}>{formErr.pass}</div>}
+              </div>
+              {/* Role */}
+              <div>
+                <label style={lS}>Role</label>
+                <div style={{display:"flex",gap:8}}>
+                  {["freelancer","admin"].map(r=>(
+                    <button key={r} onClick={()=>setForm(p=>({...p,role:r}))}
+                      style={{flex:1,padding:"9px",borderRadius:9,border:`1px solid ${form.role===r?"#f97316":"#0d1018"}`,background:form.role===r?"#1a0d00":"#02040a",color:form.role===r?"#f97316":"#475569",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",transition:"all .15s"}}>
+                      {r==="admin"?"👑 Admin":"🧑 Freelancer"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {/* Buttons */}
+              <div style={{display:"flex",gap:8,marginTop:4}}>
+                <button onClick={()=>setShowForm(false)}
+                  style={{flex:1,padding:"10px",borderRadius:10,border:"1px solid #0d1018",background:"#02040a",color:"#475569",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+                  Batal
+                </button>
+                <button onClick={saveForm}
+                  style={{flex:2,padding:"10px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#f59e0b,#f97316)",color:"white",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+                  {editTarget ? "Simpan Perubahan" : "Tambah User"} →
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Konfirmasi Hapus */}
+      {confirmDel && (
+        <div className="ov" onClick={()=>setConfirmDel(null)}>
+          <div className="mod" style={{maxWidth:360,textAlign:"center"}} onClick={e=>e.stopPropagation()}>
+            <div style={{fontSize:40,marginBottom:10}}>🗑️</div>
+            <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:16,color:"#f1f5f9",marginBottom:8}}>Hapus User?</div>
+            <p style={{fontSize:13,color:"#64748b",marginBottom:20}}>Akun <strong style={{color:"#f59e0b"}}>{confirmDel}</strong> akan dihapus permanen dan tidak bisa login lagi.</p>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>setConfirmDel(null)}
+                style={{flex:1,padding:"10px",borderRadius:10,border:"1px solid #0d1018",background:"#02040a",color:"#475569",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+                Batal
+              </button>
+              <button onClick={()=>deleteUser(confirmDel)}
+                style={{flex:1,padding:"10px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#ef4444,#dc2626)",color:"white",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+                Ya, Hapus
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tabel Admin */}
+      {[["👑 Admin", adminUsers, "#a78bfa"], ["🧑 Freelancer", freeUsers, "#f59e0b"]].map(([title, list, color]) => (
+        <div key={title} className="card" style={{marginBottom:16}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
+            <span style={{fontSize:13,fontWeight:700,color,textTransform:"uppercase",letterSpacing:".08em"}}>{title}</span>
+            <span style={{fontSize:11,color:"#334155",background:"#0a0c14",padding:"2px 8px",borderRadius:999}}>{list.length} akun</span>
+          </div>
+          {list.length === 0 ? (
+            <div style={{textAlign:"center",padding:"20px 0",color:"#334155",fontSize:13}}>Belum ada user</div>
+          ) : (
+            <div style={{display:"flex",flexDirection:"column",gap:6}}>
+              {list.map(([uname, udata]) => (
+                <div key={uname} style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:"#02040a",border:"1px solid #0d1018",borderRadius:10,padding:"11px 14px",gap:8}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10,flex:1,minWidth:0}}>
+                    <div style={{width:34,height:34,borderRadius:"50%",background:`${color}22`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}>
+                      {udata.name?.[0]?.toUpperCase()||uname[0].toUpperCase()}
+                    </div>
+                    <div style={{minWidth:0}}>
+                      <div style={{fontWeight:600,color:"#e2e8f0",fontSize:13.5}}>{udata.name||uname}</div>
+                      <div style={{fontSize:11,color:"#334155",marginTop:1}}>@{uname} · <span style={{color:"#1e2a3a"}}>{"•".repeat(Math.min((udata.pass||"").length,8))}</span></div>
+                    </div>
+                  </div>
+                  <div style={{display:"flex",gap:6,flexShrink:0}}>
+                    <button onClick={()=>openEdit(uname)}
+                      style={{padding:"6px 12px",borderRadius:8,border:"1px solid #1e2535",background:"#060a12",color:"#94a3b8",fontSize:11.5,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>
+                      ✏️ Edit
+                    </button>
+                    {uname !== "admin" && (
+                      <button onClick={()=>setConfirmDel(uname)}
+                        style={{padding:"6px 12px",borderRadius:8,border:"1px solid #2d0a0a",background:"#1f0808",color:"#f87171",fontSize:11.5,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>
+                        🗑️
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
     </div>
   );
 }
