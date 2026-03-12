@@ -38,20 +38,34 @@ const SC  = {
   "":          {color:"#475569",bg:"#151c28",icon:"•"},
 };
 
-function exportCSV(rows, filename, onFb) {
-  const csv = "\ufeff" + rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(",")).join("\n");
+async function exportCSV(rows, filename, onFb) {
+  const xlsxName = filename.replace(/\.csv$/, ".xlsx");
   try {
-    const b = new Blob([csv],{type:"text/csv;charset=utf-8;"});
-    const u = URL.createObjectURL(b);
-    const a = document.createElement("a");
-    a.href=u; a.download=filename;
-    document.body.appendChild(a); a.click();
-    document.body.removeChild(a); URL.revokeObjectURL(u);
+    if (!window.XLSX) {
+      await new Promise((res, rej) => {
+        const s = document.createElement("script");
+        s.src = "https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js";
+        s.onload = res; s.onerror = rej;
+        document.head.appendChild(s);
+      });
+    }
+    const XLSX = window.XLSX;
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws["!cols"] = rows[0].map((_, ci) => ({
+      wch: Math.max(...rows.map(r => String(r[ci]||"").length), 12)
+    }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Data");
+    XLSX.writeFile(wb, xlsxName);
   } catch {
+    const csv = "\ufeff" + rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(",")).join("\n");
     try {
+      const b = new Blob([csv],{type:"text/csv;charset=utf-8;"});
+      const u = URL.createObjectURL(b);
       const a = document.createElement("a");
-      a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv); a.download=filename;
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      a.href=u; a.download=filename;
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a); URL.revokeObjectURL(u);
     } catch { if(onFb) onFb(csv); }
   }
 }
