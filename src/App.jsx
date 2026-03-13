@@ -116,7 +116,7 @@ const todayStr = () => new Date().toISOString().slice(0,10);
 const monthStr = (d=new Date()) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
 
 const GCSS = `
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=Sora:wght@700;800&family=DM+Mono:wght@500&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:#0A0B10}::-webkit-scrollbar-thumb{background:#1e2535;border-radius:3px}
 input,select,textarea,button{font-family:inherit}
@@ -201,13 +201,15 @@ input,select,textarea,button{font-family:inherit}
   transition:width .22s cubic-bezier(.4,0,.2,1);
   position:relative;
 }
-.sidebar-wrap:hover{width:210px}
+.sidebar-wrap:hover{width:220px}
 .sidebar-wrap .sidebar-logo-text,.sidebar-wrap .sidebar-label,.sidebar-wrap .sidebar-user-text{
   opacity:0;white-space:nowrap;transition:opacity .15s .05s;pointer-events:none;overflow:hidden;
 }
 .sidebar-wrap:hover .sidebar-logo-text,
 .sidebar-wrap:hover .sidebar-label,
 .sidebar-wrap:hover .sidebar-user-text{opacity:1;pointer-events:auto}
+.sidebar-wrap .sidebar-icon-only{display:flex!important}
+.sidebar-wrap:hover .sidebar-icon-only{display:none!important}
 .nav-btn{background:none;border:none;cursor:pointer;padding:8px 10px;border-radius:10px;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:500;transition:all .15s;color:#475569;width:100%;text-align:left;white-space:nowrap;overflow:hidden}
 .nav-btn:hover{background:#141824;color:#94a3b8}
 .nav-btn.active{background:#1A1408;color:#F59E0B;border-left:2px solid #F59E0B;padding-left:8px}
@@ -537,12 +539,17 @@ export default function App(){
         {/* Sidebar — collapsed by default, expands on hover */}
         <div className={`sidebar-wrap${sideOpen?" open":""}`}>
           {/* Logo */}
-          <div style={{display:"flex",alignItems:"center",gap:10,padding:"2px 6px 14px",borderBottom:"1px solid #1A1F2E",marginBottom:8,flexShrink:0,overflow:"hidden"}}>
-            <div style={{width:32,height:32,background:"linear-gradient(135deg,#F59E0B,#F97316)",borderRadius:9,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:800,color:"white",flexShrink:0}}>N</div>
+          <div style={{padding:"6px 6px 14px",borderBottom:"1px solid #1A1F2E",marginBottom:8,flexShrink:0,overflow:"hidden"}}>
             <div className="sidebar-logo-text">
-              <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:15,fontWeight:700,color:"#F1F5F9",lineHeight:1.1}}>Naraya <span style={{color:"#F59E0B"}}>One</span></div>
-              <div style={{fontSize:8.5,color:"#334155",fontWeight:700,letterSpacing:".1em"}}>CONTENT TRACKER</div>
+              <div style={{fontFamily:"'DM Mono',monospace",fontSize:8.5,fontWeight:500,color:"#475569",letterSpacing:".2em",textTransform:"uppercase",marginBottom:5}}>Welcome to</div>
+              <div style={{display:"flex",alignItems:"center",gap:0,lineHeight:1,marginBottom:6,whiteSpace:"nowrap"}}>
+                <span style={{fontFamily:"'Sora',sans-serif",fontSize:22,fontWeight:800,color:"#F1F5F9",letterSpacing:"-0.8px"}}>Naraya</span>
+                <span style={{fontFamily:"'Sora',sans-serif",fontSize:22,fontWeight:800,color:"#F59E0B",letterSpacing:"-0.8px",marginLeft:6}}>One</span>
+              </div>
+              <div style={{fontFamily:"'Sora',sans-serif",fontSize:7.5,fontWeight:700,color:"#7C3AED",letterSpacing:".14em",textTransform:"uppercase",whiteSpace:"nowrap"}}>Content Management Tracker System</div>
             </div>
+            {/* Icon only when collapsed */}
+            <div className="sidebar-icon-only" style={{width:32,height:32,background:"linear-gradient(135deg,#F59E0B,#F97316)",borderRadius:9,display:"none",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:800,color:"white"}}>N</div>
           </div>
           {/* Nav */}
           <nav style={{flex:1,display:"flex",flexDirection:"column",gap:2,overflow:"hidden"}}>
@@ -671,7 +678,6 @@ function LoginPage({onLogin,onLoginSupabase}){
   const [sp,setSp]=useState(false);
   const [loginErr,setLoginErr]=useState("");
   const [lBusy,setLBusy]=useState(false);
-  const [showUsers,setShowUsers]=useState(false);
   // Lupa password state
   const [showForgot,setShowForgot]=useState(false);
   const [fEmail,setFEmail]=useState("");
@@ -735,16 +741,6 @@ function LoginPage({onLogin,onLoginSupabase}){
     finally{ setFBusy(false); }
   };
 
-  // Daftar akun SELALU dibaca fresh dari localStorage setiap render
-  const [userListVersion, setUserListVersion] = useState(0);
-  const dummyList = Object.entries(loadUsers()).map(([uname, udata]) => ({
-    username: uname,
-    pass:     udata.pass||"",
-    role:     udata.role==="admin" ? "Admin" : "Freelancer",
-    color:    udata.role==="admin" ? "#a78bfa" : "#f59e0b",
-    name:     udata.name||uname,
-  }));
-
   const loginCardBg = "#0D0F18";
   const loginInputStyle = {width:"100%",background:"#0A0B10",border:"1px solid #1A1F2E",color:"#e2e8f0",padding:"10px 13px 10px 40px",borderRadius:10,fontSize:14,outline:"none",fontFamily:"inherit",transition:"border-color .18s",boxSizing:"border-box"};
 
@@ -763,11 +759,12 @@ function LoginPage({onLogin,onLoginSupabase}){
             <div style={{width:6,height:6,borderRadius:"50%",background:"#F59E0B"}}/>
             <span style={{fontSize:10,fontWeight:700,letterSpacing:".14em",color:"#F59E0B",textTransform:"uppercase"}}>Content Management Tracker</span>
           </div>
-          <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:52,fontWeight:700,lineHeight:1.05,marginBottom:18,letterSpacing:"-2px"}}>
-            <span style={{color:"#F1F5F9"}}>Naraya</span><br/>
-            <span style={{color:"#F59E0B"}}>One</span>
+          <div style={{lineHeight:1.0,marginBottom:10}}>
+            <span style={{fontFamily:"'Sora',sans-serif",fontSize:52,fontWeight:800,color:"#F1F5F9",letterSpacing:"-2px"}}>Naraya </span>
+            <span style={{fontFamily:"'Sora',sans-serif",fontSize:52,fontWeight:800,color:"#F59E0B",letterSpacing:"-2px"}}>One</span>
           </div>
-          <div style={{fontSize:14,color:"#475569",lineHeight:1.8,marginBottom:36,maxWidth:340}}>Platform pelaporan dan pelacakan konten untuk tim freelancer Naraya Group.</div>
+          <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,fontWeight:500,color:"#7C3AED",letterSpacing:".18em",textTransform:"uppercase",marginBottom:16}}>Content Management Tracker System</div>
+          <div style={{fontFamily:"'Sora',sans-serif",fontSize:13,fontWeight:300,color:"#475569",lineHeight:1.7,marginBottom:36,maxWidth:340}}>Platform pelaporan dan pelacakan konten untuk tim freelancer Naraya Group.</div>
           <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
             {[["📱","6 Akun aktif"],["👥","6 Kreator"],["📊","Analytics real-time"],["🎯","Target bulanan"]].map(([ic,lbl])=>(
               <div key={lbl} style={{display:"flex",alignItems:"center",gap:8,background:"#0D0F18",border:"1px solid #1A1F2E",borderRadius:10,padding:"8px 14px"}}>
@@ -785,14 +782,12 @@ function LoginPage({onLogin,onLoginSupabase}){
 
           {/* Logo mark */}
           <div style={{marginBottom:28}}>
-            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
-              <div style={{width:34,height:34,background:"linear-gradient(135deg,#F59E0B,#F97316)",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:800,color:"white"}}>N</div>
-              <div className="login-title-sm" style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:22,fontWeight:700,letterSpacing:"-0.5px"}}>
-                <span style={{color:"#F1F5F9"}}>Naraya </span>
-                <span style={{color:"#F59E0B"}}>One</span>
-              </div>
+            <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,fontWeight:500,color:"#475569",letterSpacing:".2em",textTransform:"uppercase",marginBottom:8}}>Welcome to</div>
+            <div style={{display:"flex",alignItems:"center",gap:0,lineHeight:1,marginBottom:8}}>
+              <span style={{fontFamily:"'Sora',sans-serif",fontSize:30,fontWeight:800,color:"#F1F5F9",letterSpacing:"-1px"}}>Naraya</span>
+              <span style={{fontFamily:"'Sora',sans-serif",fontSize:30,fontWeight:800,color:"#F59E0B",letterSpacing:"-1px",marginLeft:8}}>One</span>
             </div>
-            <div style={{fontSize:12,color:"#334155",letterSpacing:".04em",paddingLeft:44}}>Masuk ke dashboard kamu</div>
+            <div style={{fontFamily:"'Sora',sans-serif",fontSize:9,fontWeight:700,color:"#7C3AED",letterSpacing:".14em",textTransform:"uppercase"}}>Content Management Tracker System</div>
           </div>
 
           {showForgot?(
@@ -868,32 +863,6 @@ function LoginPage({onLogin,onLoginSupabase}){
                 </button>
               </div>
 
-              {/* Daftar akun */}
-              <div style={{borderTop:"1px solid #1A1F2E",paddingTop:14}}>
-                <button onClick={()=>setShowUsers(!showUsers)} style={{width:"100%",background:"#0A0B10",border:"1px solid #1A1F2E",color:"#64748b",padding:"9px",borderRadius:10,cursor:"pointer",fontSize:12,fontWeight:600,fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6,transition:"all .15s"}}>
-                  <Icon name="user" size={12}/> {showUsers?"Sembunyikan":"Lihat"} Daftar Akun
-                </button>
-                {showUsers&&(
-                  <div style={{marginTop:10,background:"#0A0B10",border:"1px solid #1A1F2E",borderRadius:12,overflow:"hidden"}}>
-                    <div style={{padding:"8px 12px",borderBottom:"1px solid #1A1F2E",fontSize:9.5,fontWeight:700,color:"#334155",textTransform:"uppercase",letterSpacing:".1em"}}>Akun yang tersedia</div>
-                    {dummyList.length===0?(
-                      <div style={{padding:"14px 12px",textAlign:"center",color:"#334155",fontSize:12}}>Belum ada akun. Admin perlu tambahkan dulu.</div>
-                    ):dummyList.map((u,i)=>(
-                      <button key={u.username} onClick={()=>{setUsername(u.username);setP(u.pass);setShowUsers(false);}}
-                        style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"9px 12px",background:"none",border:"none",borderBottom:i<dummyList.length-1?"1px solid #0D0F18":"none",cursor:"pointer",transition:"background .12s",textAlign:"left"}}
-                        onMouseEnter={e=>e.currentTarget.style.background="#0D0F18"}
-                        onMouseLeave={e=>e.currentTarget.style.background="none"}>
-                        <div style={{display:"flex",alignItems:"center",gap:8}}>
-                          <div style={{width:6,height:6,borderRadius:"50%",background:u.color,flexShrink:0}}/>
-                          <span style={{fontSize:13,fontWeight:600,color:"#c8d3e0"}}>{u.name||u.username}</span>
-                          <span style={{fontSize:11,color:"#475569"}}>@{u.username}</span>
-                        </div>
-                        <span style={{fontSize:9.5,fontWeight:700,padding:"2px 7px",borderRadius:999,background:u.color+"22",color:u.color}}>{u.role}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
             </div>
           )}
         </div>
@@ -1013,7 +982,7 @@ function DashboardPage({ data, updData, showToast, setPage, freelancerNames }) {
         </div>
         <div style={{ display:"flex", justifyContent:"space-between", fontSize:11 }}>
           <span style={{color:"#F59E0B",fontWeight:600}}>{pct >= 100 ? "🎉 Target tercapai!" : pct >= 75 ? "💪 Hampir sampai!" : pct >= 50 ? "⚡ Terus semangat!" : "🚀 Yuk tingkatkan!"}</span>
-          <span style={{color:"#64748B",fontWeight:500}}>Sisa: {Math.max(0, target - thisMonth.length).toLocaleString()} video</span>
+          <span style={{color:"#F1F5F9",fontWeight:500}}>Sisa: {Math.max(0, target - thisMonth.length).toLocaleString()} video</span>
         </div>
       </div>
 
@@ -1458,7 +1427,7 @@ function ProductivityPage({ data, updData, showToast, setCsvModal }) {
         </div>
         <div style={{ display:"flex", justifyContent:"space-between", fontSize:11 }}>
           <span style={{color:"#f59e0b",fontWeight:600}}>{pct >= 100 ? "🎉 Tercapai!" : pct >= 75 ? "💪 Hampir!" : pct >= 50 ? "⚡ Semangat!" : "🚀 Tingkatkan!"}</span>
-          <span style={{color:"#94a3b8",fontWeight:500}}>Sisa: {Math.max(0, tgt - thisMPosted).toLocaleString()}</span>
+          <span style={{color:"#F1F5F9",fontWeight:500}}>Sisa: {Math.max(0, tgt - thisMPosted).toLocaleString()}</span>
         </div>
       </div>
       {/* FILTER */}
