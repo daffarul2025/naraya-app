@@ -20,7 +20,9 @@ const DD = {
 // ─── USERS — disimpan di Supabase (id=2) + localStorage backup ──────────────
 const USERS_KEY = "naraya_users_v3";
 const DEFAULT_USERS = {
-  "admin": {pass:"admin123", role:"admin", name:"Admin"},
+  "admin": {pass:"admin123",  role:"admin",      name:"Admin"},
+  "darul": {pass:"darul123",  role:"freelancer",  name:"Daffarul Firdaus Ilmi"},
+  "aryak": {pass:"aryak123",  role:"freelancer",  name:"Arya Kusuma"},
 };
 function sanitizeUsers(parsed){
   const out={};
@@ -28,7 +30,10 @@ function sanitizeUsers(parsed){
     if(typeof v==="object"&&v!==null&&v.pass&&v.role)
       out[k]={pass:v.pass,role:v.role,name:v.name||k};
   }
-  if(!out["admin"]) out["admin"]={...DEFAULT_USERS["admin"]};
+  // Pastikan akun default selalu ada
+  for(const [k,v] of Object.entries(DEFAULT_USERS)){
+    if(!out[k]) out[k]={...v};
+  }
   return out;
 }
 function loadUsers(){
@@ -73,7 +78,7 @@ const SC  = {
   "Posted":    {color:"#10b981",bg:"#052e16",icon:"✅"},
   "Scheduled": {color:"#3b82f6",bg:"#0c1a3a",icon:"🗓️"},
   "Draft":     {color:"#f59e0b",bg:"#1a1100",icon:"📝"},
-  "":          {color:"#475569",bg:"#151c28",icon:"•"},
+  "":          {color:"#475569",bg:"#1A1F2E",icon:"•"},
 };
 
 async function exportCSV(rows, filename, onFb) {
@@ -111,44 +116,109 @@ const todayStr = () => new Date().toISOString().slice(0,10);
 const monthStr = (d=new Date()) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
 
 const GCSS = `
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
-::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:#040710}::-webkit-scrollbar-thumb{background:#1a2035;border-radius:3px}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:#0A0B10}::-webkit-scrollbar-thumb{background:#1e2535;border-radius:3px}
 input,select,textarea,button{font-family:inherit}
-.nav-btn{background:none;border:none;cursor:pointer;padding:9px 13px;border-radius:10px;display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;transition:all .15s;color:#475569;width:100%;text-align:left}
-.nav-btn:hover{background:#0d1018;color:#94a3b8}
-.nav-btn.active{background:linear-gradient(135deg,#6366f1,#7c3aed);color:white;box-shadow:0 4px 18px #6366f133}
-.card{background:#0b0e16;border:1px solid #151c28;border-radius:15px;padding:20px}
-.btn-p{background:linear-gradient(135deg,#6366f1,#7c3aed);color:white;border:none;padding:9px 18px;border-radius:10px;cursor:pointer;font-size:13.5px;font-weight:600;display:inline-flex;align-items:center;gap:7px;transition:all .18s}
-.btn-p:hover{opacity:.84;transform:translateY(-1px)}
-.btn-s{background:#0d1018;color:#94a3b8;border:1px solid #1e2535;padding:8px 16px;border-radius:10px;cursor:pointer;font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:7px;transition:all .15s}
-.btn-s:hover{background:#141b27}
+
+/* ── NAV BUTTONS (sidebar) ── */
+.nav-btn{background:none;border:none;cursor:pointer;padding:8px 12px;border-radius:10px;display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;transition:all .15s;color:#475569;width:100%;text-align:left}
+.nav-btn:hover{background:#141824;color:#94a3b8}
+.nav-btn.active{background:#1A1408;color:#F59E0B;border-left:2px solid #F59E0B;padding-left:10px}
+
+/* ── CARDS ── */
+.card{background:#0D0F18;border:1px solid #1A1F2E;border-radius:14px;padding:20px}
+
+/* ── STAT CARD accent bar ── */
+.stat-card{background:#0D0F18;border:1px solid #1A1F2E;border-radius:14px;padding:18px 20px;position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.stat-card.amber::before{background:linear-gradient(90deg,#F59E0B,#F97316)}
+.stat-card.green::before{background:linear-gradient(90deg,#10B981,#059669)}
+.stat-card.blue::before{background:linear-gradient(90deg,#3B82F6,#6366F1)}
+.stat-card.purple::before{background:linear-gradient(90deg,#8B5CF6,#7C3AED)}
+.stat-card.red::before{background:linear-gradient(90deg,#EF4444,#DC2626)}
+
+/* ── BUTTONS ── */
+.btn-p{background:linear-gradient(135deg,#F59E0B,#F97316);color:white;border:none;padding:9px 18px;border-radius:10px;cursor:pointer;font-size:13.5px;font-weight:700;display:inline-flex;align-items:center;gap:7px;transition:all .18s}
+.btn-p:hover{opacity:.88;transform:translateY(-1px)}
+.btn-s{background:#141824;color:#94a3b8;border:1px solid #1e2535;padding:8px 16px;border-radius:10px;cursor:pointer;font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:7px;transition:all .15s}
+.btn-s:hover{background:#1A1F2E}
 .btn-d{background:#1f0808;color:#fca5a5;border:1px solid #5c1a1a;padding:6px 11px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:500;display:inline-flex;align-items:center;gap:5px;transition:all .15s}
 .btn-d:hover{background:#2d0f0f}
+
+/* ── FORM ── */
 .lbl{font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px;display:block}
-.inp{width:100%;background:#060a12;border:1px solid #151c28;color:#e2e8f0;padding:10px 13px;border-radius:10px;font-size:14px;outline:none;transition:border-color .18s}
-.inp:focus{border-color:#6366f1}
+.inp{width:100%;background:#0A0B10;border:1px solid #1A1F2E;color:#e2e8f0;padding:10px 13px;border-radius:10px;font-size:14px;outline:none;transition:border-color .18s}
+.inp:focus{border-color:#F59E0B}
 .tag{display:inline-flex;align-items:center;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:600}
-.ov{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(6px)}
-.mod{background:#0b0e16;border:1px solid #151c28;border-radius:18px;padding:24px;width:100%;max-width:540px;max-height:92vh;overflow-y:auto}
-.toast{position:fixed;bottom:20px;right:20px;z-index:300;padding:12px 18px;border-radius:12px;font-size:13px;font-weight:500;display:flex;align-items:center;gap:9px;animation:sUp .25s ease}
+
+/* ── MODALS ── */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(6px)}
+.mod{background:#0D0F18;border:1px solid #1A1F2E;border-radius:18px;padding:24px;width:100%;max-width:540px;max-height:92vh;overflow-y:auto}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:24px;right:24px;z-index:300;padding:12px 18px;border-radius:12px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:9px;animation:sUp .25s ease;box-shadow:0 8px 32px rgba(0,0,0,.5)}
 @keyframes sUp{from{transform:translateY(14px);opacity:0}to{transform:translateY(0);opacity:1}}
 @keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── LAYOUT UTILS ── */
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.pbar{height:6px;background:#151c28;border-radius:999px;overflow:hidden}
+.pbar{height:6px;background:#1A1F2E;border-radius:999px;overflow:hidden}
 .pfill{height:100%;border-radius:999px;transition:width .7s ease}
-.cday{background:#060a12;border:1px solid #151c28;border-radius:8px;min-height:72px;padding:6px;transition:border-color .15s}
+.cday{background:#0A0B10;border:1px solid #1A1F2E;border-radius:10px;min-height:72px;padding:6px;transition:border-color .15s}
 .cday.hp{cursor:pointer}.cday.hp:hover{border-color:#2d3a50}
-.cday.tc{border-color:#6366f1!important}
+.cday.tc{border-color:#F59E0B!important;background:#1A1408!important}
 .cday.om{opacity:.2}
-.trow:hover td{background:#080e18}
+.trow:hover td{background:#0D1120}
 .sgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+
+/* ── TOP NAV BAR ── */
+.topnav{height:56px;background:#0D0F18;border-bottom:1px solid #1A1F2E;display:flex;align-items:center;padding:0 24px;gap:0;flex-shrink:0;position:sticky;top:0;z-index:100}
+.topnav-logo{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:17px;letter-spacing:-0.5px;display:flex;align-items:center;gap:9px;margin-right:32px}
+.topnav-logo-icon{width:29px;height:29px;background:linear-gradient(135deg,#F59E0B,#F97316);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:white;flex-shrink:0}
+.topnav-links{display:flex;align-items:center;gap:2px;flex:1}
+.topnav-link{padding:6px 13px;border-radius:8px;font-size:13px;font-weight:500;color:#64748B;cursor:pointer;border:none;background:none;transition:all .15s;font-family:inherit;display:flex;align-items:center;gap:7px}
+.topnav-link:hover{color:#94A3B8;background:#141824}
+.topnav-link.active{color:#F59E0B;background:#1A1408;font-weight:600}
+.topnav-user{display:flex;align-items:center;gap:8px;background:#141824;border:1px solid #1E2535;border-radius:10px;padding:5px 12px 5px 6px;cursor:pointer;margin-left:auto;transition:all .15s}
+.topnav-user:hover{border-color:#2d3545}
+.topnav-avatar{width:27px;height:27px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;background:linear-gradient(135deg,#F59E0B,#F97316);flex-shrink:0}
+.topnav-uname{font-size:12.5px;font-weight:600;color:#CBD5E1}
+.topnav-role{font-size:10px;color:#475569;font-weight:600}
+
+/* ── SIDEBAR (collapsible hover — desktop) ── */
 .mob-topbar{display:none}.mob-overlay{display:none}
+.sidebar-wrap{
+  width:56px;
+  background:#0D0F18;
+  border-right:1px solid #1A1F2E;
+  display:flex;flex-direction:column;
+  padding:12px 6px;
+  flex-shrink:0;
+  z-index:150;
+  overflow:hidden;
+  transition:width .22s cubic-bezier(.4,0,.2,1);
+  position:relative;
+}
+.sidebar-wrap:hover{width:210px}
+.sidebar-wrap .sidebar-logo-text,.sidebar-wrap .sidebar-label,.sidebar-wrap .sidebar-user-text{
+  opacity:0;white-space:nowrap;transition:opacity .15s .05s;pointer-events:none;overflow:hidden;
+}
+.sidebar-wrap:hover .sidebar-logo-text,
+.sidebar-wrap:hover .sidebar-label,
+.sidebar-wrap:hover .sidebar-user-text{opacity:1;pointer-events:auto}
+.nav-btn{background:none;border:none;cursor:pointer;padding:8px 10px;border-radius:10px;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:500;transition:all .15s;color:#475569;width:100%;text-align:left;white-space:nowrap;overflow:hidden}
+.nav-btn:hover{background:#141824;color:#94a3b8}
+.nav-btn.active{background:#1A1408;color:#F59E0B;border-left:2px solid #F59E0B;padding-left:8px}
+
 @media(max-width:768px){
-  .sidebar-wrap{position:fixed!important;left:-218px;top:0;height:100vh;z-index:150;transition:left .25s ease}
+  .sidebar-wrap{position:fixed!important;left:-220px;top:0;height:100vh;width:210px!important;z-index:150;transition:left .25s ease}
+  .sidebar-wrap:hover{width:210px!important}
   .sidebar-wrap.open{left:0;box-shadow:6px 0 30px rgba(0,0,0,.9)}
+  .sidebar-wrap .sidebar-logo-text,.sidebar-wrap .sidebar-label,.sidebar-wrap .sidebar-user-text{opacity:1!important}
   .mob-overlay{display:block;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:149}
-  .mob-topbar{display:flex;background:#02040a;border-bottom:1px solid #0d1018;padding:12px 16px;align-items:center;justify-content:space-between;flex-shrink:0}
+  .mob-topbar{display:flex;background:#0D0F18;border-bottom:1px solid #1A1F2E;padding:0 16px;height:52px;align-items:center;justify-content:space-between;flex-shrink:0}
   .main-pad{padding:16px 14px!important}
   .g2{grid-template-columns:1fr!important}
   .sgrid{grid-template-columns:1fr 1fr!important}
@@ -156,55 +226,35 @@ input,select,textarea,button{font-family:inherit}
 }
 @media(min-width:769px){.sidebar-wrap{position:relative!important;left:0!important}}
 
-/* ── Login Page ── */
+/* ── PAGE HEADER ── */
+.page-title{font-family:'Space Grotesk',sans-serif;font-size:21px;font-weight:700;color:#F1F5F9;letter-spacing:-0.4px;margin-bottom:3px}
+.page-sub{font-size:12.5px;color:#475569}
+
+/* ── TABLE ── */
+.nr-tbl{width:100%;border-collapse:collapse}
+.nr-tbl th{font-size:11px;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:.08em;padding:0 12px 10px;text-align:left;white-space:nowrap}
+.nr-tbl td{padding:9px 12px;font-size:13px;border-bottom:1px solid #111520}
+.nr-tbl tr:last-child td{border-bottom:none}
+.nr-tbl tbody tr:hover td{background:#0D1120}
+
+/* ── STATUS PILLS ── */
+.pill{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:6px;font-size:11.5px;font-weight:600}
+.pill.posted{background:#052E16;color:#10B981}
+.pill.draft{background:#1A1100;color:#F59E0B}
+.pill.sched{background:#0C1A3A;color:#60A5FA}
+
+/* ── LOGIN PAGE ── */
 .login-right-panel{overflow:hidden!important}
 .login-right-panel::-webkit-scrollbar{display:none!important}
 body:has(.login-right-panel){overflow:hidden!important}
-
-/* Kunci semua input di login agar tidak geser saat Tab/focus */
-.login-right-panel input{
-  box-sizing:border-box!important;
-  outline:none!important;
-  outline-offset:0!important;
-  -webkit-appearance:none!important;
-}
-.login-right-panel input:focus{
-  outline:none!important;
-  border-color:#f97316!important;
-  box-shadow:none!important;
-  transform:none!important;
-}
-.login-right-panel *{
-  box-sizing:border-box;
-}
-.login-right-panel button:focus,
-.login-right-panel input:focus,
-.login-right-panel select:focus{
-  outline:none!important;
-  outline-offset:0!important;
-}
+.login-right-panel input{box-sizing:border-box!important;outline:none!important;outline-offset:0!important;-webkit-appearance:none!important}
+.login-right-panel input:focus{outline:none!important;border-color:#F97316!important;box-shadow:none!important;transform:none!important}
+.login-right-panel *{box-sizing:border-box}
+.login-right-panel button:focus,.login-right-panel input:focus,.login-right-panel select:focus{outline:none!important;outline-offset:0!important}
 
 @media(max-width:768px){
-  .login-right-panel{
-    max-width:100%!important;
-    width:100%!important;
-    border-left:none!important;
-    height:100vh!important;
-    min-height:unset!important;
-    justify-content:flex-start!important;
-    padding:0!important;
-    overflow-y:auto!important;
-    overflow-x:hidden!important;
-  }
-  .login-mob-inner{
-    min-height:100vh;
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    padding:32px 24px 40px;
-    width:100%;
-    box-sizing:border-box;
-  }
+  .login-right-panel{max-width:100%!important;width:100%!important;border-left:none!important;height:100vh!important;min-height:unset!important;justify-content:flex-start!important;padding:0!important;overflow-y:auto!important;overflow-x:hidden!important}
+  .login-mob-inner{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:32px 24px 40px;width:100%;box-sizing:border-box}
   .login-title-sm{font-size:22px!important}
 }
 @media(max-width:400px){
@@ -257,11 +307,11 @@ function CalPicker({value,onChange,label}){
   return(
     <div ref={ref} style={{position:"relative"}}>
       {label&&<label className="lbl">{label}</label>}
-      <button onClick={()=>setOpen(!open)} style={{background:"#060a12",border:`1px solid ${open?"#6366f1":"#151c28"}`,color:value?"#e2e8f0":"#475569",padding:"10px 13px",borderRadius:10,cursor:"pointer",fontSize:13.5,display:"flex",alignItems:"center",gap:8,width:"100%",fontFamily:"inherit",whiteSpace:"nowrap"}}>
+      <button onClick={()=>setOpen(!open)} style={{background:"#0A0B10",border:`1px solid ${open?"#6366f1":"#1A1F2E"}`,color:value?"#e2e8f0":"#475569",padding:"10px 13px",borderRadius:10,cursor:"pointer",fontSize:13.5,display:"flex",alignItems:"center",gap:8,width:"100%",fontFamily:"inherit",whiteSpace:"nowrap"}}>
         <Icon name="cal" size={14}/> {disp}
       </button>
       {open&&(
-        <div style={{position:"absolute",top:"calc(100% + 6px)",left:0,zIndex:9999,background:"#0b0e16",border:"1px solid #151c28",borderRadius:13,padding:14,minWidth:268,boxShadow:"0 24px 60px rgba(0,0,0,.85)"}}>
+        <div style={{position:"absolute",top:"calc(100% + 6px)",left:0,zIndex:9999,background:"#0D0F18",border:"1px solid #151c28",borderRadius:13,padding:14,minWidth:268,boxShadow:"0 24px 60px rgba(0,0,0,.85)"}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
             <button onClick={()=>setVd(new Date(y,m-1,1))} style={{background:"none",border:"none",color:"#64748b",cursor:"pointer",padding:"4px 6px",display:"flex"}}><Icon name="cL" size={14}/></button>
             <span style={{fontWeight:700,fontSize:13,color:"#e2e8f0"}}>{MI[m]} {y}</span>
@@ -294,7 +344,7 @@ function EditModal({post,data,onSave,onClose}){
     <div className="ov" onClick={onClose}>
       <div className="mod" style={{maxWidth:520}} onClick={e=>e.stopPropagation()}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
-          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:16}}>✏️ Edit Laporan</div>
+          <div style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:15}}>✏️ Edit Laporan</div>
           <button style={{background:"none",border:"none",color:"#64748b",cursor:"pointer"}} onClick={onClose}><Icon name="x" size={18}/></button>
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:13}}>
@@ -321,14 +371,14 @@ function EditModal({post,data,onSave,onClose}){
 function SettingsSection({title,emoji,k,items,nv,setNv,ed,setEd,onAdd,onDel,onSaveEdit}){
   return(
     <div className="card" style={{marginBottom:14}}>
-      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13.5,marginBottom:13}}>{emoji} {title}</div>
+      <div style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:13.5,color:"#F1F5F9",marginBottom:13}}>{emoji} {title}</div>
       <div style={{display:"flex",gap:8,marginBottom:11}}>
         <input value={nv} onChange={e=>setNv(e.target.value)} onKeyDown={e=>e.key==="Enter"&&onAdd(k,nv,setNv)} placeholder={`Tambah ${title.toLowerCase()}...`} className="inp" style={{flex:1}}/>
         <button className="btn-p" style={{padding:"8px 14px"}} onClick={()=>onAdd(k,nv,setNv)}><Icon name="plus" size={13}/> Tambah</button>
       </div>
       <div style={{display:"flex",flexDirection:"column",gap:6}}>
         {items.map(item=>(
-          <div key={item} style={{display:"flex",alignItems:"center",gap:7,background:"#060a12",padding:"8px 11px",borderRadius:9,border:"1px solid #151c28"}}>
+          <div key={item} style={{display:"flex",alignItems:"center",gap:7,background:"#0A0B10",padding:"8px 11px",borderRadius:9,border:"1px solid #151c28"}}>
             {ed?.old===item?(
               <><input value={ed.val} onChange={e=>setEd({...ed,val:e.target.value})} className="inp" style={{flex:1,padding:"6px 10px"}} autoFocus/>
               <button className="btn-p" style={{padding:"6px 10px"}} onClick={()=>onSaveEdit(k,item,ed.val,setEd)}><Icon name="check" size={12}/></button>
@@ -345,18 +395,19 @@ function SettingsSection({title,emoji,k,items,nv,setNv,ed,setEd,onAdd,onDel,onSa
   );
 }
 
-function NotifBadge({data}){
+function NotifBadge({data, freelancerNames}){
   const td=todayStr();
-  const missing=(data.creators||[]).filter(cr=>!(data.posts||[]).some(p=>p.date===td&&p.creator===cr));
+  const names = freelancerNames && freelancerNames.length > 0 ? freelancerNames : (data.creators||[]);
+  const missing=names.filter(cr=>!(data.posts||[]).some(p=>p.date===td&&p.creator===cr));
   if(!missing.length) return null;
   return <span style={{background:"#ef4444",color:"white",borderRadius:999,fontSize:9,fontWeight:700,padding:"1px 6px",marginLeft:"auto"}}>{missing.length}</span>;
 }
 
 function Spinner({text="Memuat..."}){
   return(
-    <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#040710",flexDirection:"column",gap:14}}>
-      <div style={{width:40,height:40,border:"3px solid #6366f133",borderTop:"3px solid #6366f1",borderRadius:"50%",animation:"spin 1s linear infinite"}}/>
-      <div style={{color:"#475569",fontSize:13}}>{text}</div>
+    <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#0A0B10",flexDirection:"column",gap:14}}>
+      <div style={{width:38,height:38,border:"2.5px solid #1A1F2E",borderTop:"2.5px solid #F59E0B",borderRadius:"50%",animation:"spin 1s linear infinite"}}/>
+      <div style={{color:"#475569",fontSize:13,fontFamily:"'Plus Jakarta Sans',sans-serif"}}>{text}</div>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
@@ -374,6 +425,8 @@ export default function App(){
   const [toast,setToast]=useState(null);
   const [csvModal,setCsvModal]=useState(null);
   const [resetMode,setResetMode]=useState(false);
+  // State users live — supaya Dashboard, Pengaturan, dsb ikut update real-time
+  const [liveUsers,setLiveUsers]=useState(()=>loadUsers());
 
   useEffect(()=>{
     if(window.location.hash.includes("type=recovery")){setResetMode(true);setAppLoading(false);return;}
@@ -409,7 +462,13 @@ export default function App(){
         setData(local?JSON.parse(local):{...DD});
       }catch{setData({...DD});}
     }
+    // Juga refresh liveUsers dari DB saat login
+    async function loadU(){
+      const u = await loadUsersFromDB();
+      setLiveUsers({...u});
+    }
     load();
+    loadU();
   },[role]);
 
   useEffect(()=>{
@@ -447,73 +506,97 @@ export default function App(){
   const adminNav=[{id:"home",label:"Dashboard",icon:"home"},{id:"input",label:"Input Laporan",icon:"plus"},{id:"calendar",label:"Kalender Konten",icon:"cal"},{id:"productivity",label:"Produktivitas",icon:"chart"},{id:"settings",label:"Pengaturan",icon:"cog"},{id:"history",label:"History",icon:"hist"},{id:"users",label:"Kelola User",icon:"user"}];
   const freelancerNav=[{id:"input",label:"Input Laporan",icon:"plus"},{id:"calendar",label:"Kalender Konten",icon:"cal"}];
   const nav=role==="admin"?adminNav:freelancerNav;
+
+  // Nama-nama freelancer dari Kelola User → sumber tunggal untuk Dashboard & Pengaturan
+  const freelancerNames = Object.entries(liveUsers)
+    .filter(([,v])=>v.role==="freelancer")
+    .map(([,v])=>v.name||"")
+    .filter(Boolean);
+
   // Normalize data — pastikan semua array ada walau data dari localStorage tidak lengkap
   const safeData = {
     posts:         Array.isArray(data.posts)    ? data.posts    : [],
     monthlyTarget: data.monthlyTarget           || 1500,
-    creators:      Array.isArray(data.creators) ? data.creators : ["Arya","Darul","Revi","Vika","Nessa","Khaira"],
+    creators:      freelancerNames.length > 0 ? freelancerNames : (Array.isArray(data.creators) ? data.creators : ["Arya","Darul","Revi","Vika","Nessa","Khaira"]),
     accounts:      Array.isArray(data.accounts) ? data.accounts : ["WiFicerdas","NarayaConnect","Curhat.santui","SobatNgadu","Mbokdewor","GA.naratelgroup"],
     themes:        Array.isArray(data.themes)   ? data.themes   : ["Edukasi","Promosi","Hiburan","Informasi","Tutorial","Motivasi","Lifestyle","Review"],
   };
-  const props={data:safeData,updData,editPost,delPost,addPost,showToast,setCsvModal,setPage,role,loggedUsername};
+  const props={data:safeData,updData,editPost,delPost,addPost,showToast,setCsvModal,setPage,role,loggedUsername,liveUsers,setLiveUsers,freelancerNames};
+
+  const uname = loggedUsername||authUser?.email?.split("@")[0]||(role==="admin"?"Admin":"Freelancer");
+  const uInitial = uname.charAt(0).toUpperCase();
 
   return(
-    <div style={{minHeight:"100vh",background:"#040710",color:"#cbd5e1",fontFamily:"'DM Sans','Segoe UI',sans-serif"}}>
+    <div style={{minHeight:"100vh",background:"#0A0B10",color:"#cbd5e1",fontFamily:"'Plus Jakarta Sans','DM Sans',sans-serif"}}>
       <style>{GCSS}</style>
+
+      {/* ── BODY: sidebar + main ── */}
       <div style={{display:"flex",height:"100vh",overflow:"hidden"}}>
         {sideOpen&&<div className="mob-overlay" onClick={()=>setSideOpen(false)}/>}
-        <div className={`sidebar-wrap${sideOpen?" open":""}`} style={{width:210,background:"#02040a",borderRight:"1px solid #0d1018",display:"flex",flexDirection:"column",padding:"16px 9px",flexShrink:0,zIndex:150}}>
-          <div style={{padding:"4px 8px 20px"}}>
-            <div style={{fontFamily:"'Syne',sans-serif",fontSize:17,fontWeight:800,background:"linear-gradient(135deg,#7c3aed,#f97316,#f59e0b)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>Naraya One</div>
-            <div style={{fontSize:7.5,color:"#1e2535",fontWeight:700,letterSpacing:".14em",marginTop:1}}>CONTENT MANAGEMENT TRACKER</div>
+
+        {/* Sidebar — collapsed by default, expands on hover */}
+        <div className={`sidebar-wrap${sideOpen?" open":""}`}>
+          {/* Logo */}
+          <div style={{display:"flex",alignItems:"center",gap:10,padding:"2px 6px 14px",borderBottom:"1px solid #1A1F2E",marginBottom:8,flexShrink:0,overflow:"hidden"}}>
+            <div style={{width:32,height:32,background:"linear-gradient(135deg,#F59E0B,#F97316)",borderRadius:9,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:800,color:"white",flexShrink:0}}>N</div>
+            <div className="sidebar-logo-text">
+              <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:15,fontWeight:700,color:"#F1F5F9",lineHeight:1.1}}>Naraya <span style={{color:"#F59E0B"}}>One</span></div>
+              <div style={{fontSize:8.5,color:"#334155",fontWeight:700,letterSpacing:".1em"}}>CONTENT TRACKER</div>
+            </div>
           </div>
-          <nav style={{flex:1,display:"flex",flexDirection:"column",gap:2}}>
+          {/* Nav */}
+          <nav style={{flex:1,display:"flex",flexDirection:"column",gap:2,overflow:"hidden"}}>
             {nav.map(n=>(
               <button key={n.id} className={`nav-btn${page===n.id?" active":""}`} onClick={()=>{setPage(n.id);setSideOpen(false);}}>
-                <Icon name={n.icon} size={14}/> {n.label}
-                {n.id==="home"&&role==="admin"&&<NotifBadge data={data}/>}
+                <span style={{flexShrink:0,display:"flex"}}><Icon name={n.icon} size={16}/></span>
+                <span className="sidebar-label">{n.label}</span>
+                {n.id==="home"&&role==="admin"&&<NotifBadge data={safeData} freelancerNames={freelancerNames}/>}
               </button>
             ))}
           </nav>
-          <div style={{borderTop:"1px solid #0d1018",paddingTop:12,marginTop:6}}>
-            <div style={{fontSize:10,color:"#1e2a3a",padding:"0 8px 8px",fontWeight:700}}>
-              <span style={{color:"#94a3b8",fontSize:11,fontWeight:600}}>{loggedUsername||authUser?.email?.split("@")[0]||(role==="admin"?"Admin":"Freelancer")}</span>
-              <span style={{display:"block",fontSize:9,color:"#334155",marginTop:1}}>{role==="admin"?"👑 Admin":"🧑 Freelancer"}</span>
-            </div>
-            <button className="nav-btn" onClick={doLogout}><Icon name="logout" size={14}/> Keluar</button>
+          {/* User / logout */}
+          <div style={{borderTop:"1px solid #1A1F2E",paddingTop:10,marginTop:6,overflow:"hidden"}}>
+            <button className="nav-btn" onClick={doLogout} style={{overflow:"hidden"}}>
+              <span style={{flexShrink:0,display:"flex"}}><Icon name="logout" size={16}/></span>
+              <span className="sidebar-user-text" style={{display:"flex",flexDirection:"column",gap:1}}>
+                <span style={{fontSize:12,fontWeight:600,color:"#94a3b8"}}>{uname}</span>
+                <span style={{fontSize:10,color:"#334155"}}>{role==="admin"?"👑 Admin":"🧑 Freelancer"} · Keluar</span>
+              </span>
+            </button>
           </div>
         </div>
+
+        {/* Main content */}
         <div style={{flex:1,overflow:"auto",display:"flex",flexDirection:"column"}}>
-          <div className="mob-topbar">
-            <button onClick={()=>setSideOpen(true)} style={{background:"none",border:"none",color:"#94a3b8",cursor:"pointer",display:"flex"}}><Icon name="menu" size={20}/></button>
-            <div style={{fontFamily:"'Syne',sans-serif",fontSize:15,fontWeight:800,background:"linear-gradient(135deg,#7c3aed,#f97316,#f59e0b)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>Naraya One</div>
-            <div style={{fontSize:10,color:role==="admin"?"#a78bfa":"#64748b",fontWeight:700}}>{role==="admin"?"ADMIN":"FREELANCER"}</div>
-          </div>
-          <main className="main-pad" style={{flex:1,overflow:"auto",padding:"24px 26px"}}>
+          <main className="main-pad" style={{flex:1,overflow:"auto",padding:"24px 28px"}}>
             {page==="home"&&role==="admin"&&<DashboardPage {...props}/>}
             {page==="input"&&<InputPage {...props}/>}
             {page==="calendar"&&<CalendarPage {...props}/>}
             {page==="productivity"&&<ProductivityPage {...props}/>}
             {page==="settings"&&role==="admin"&&<SettingsPage {...props}/>}
             {page==="history"&&<HistoryPage {...props}/>}
-            {page==="users"&&role==="admin"&&<UsersPage showToast={showToast}/>}
+            {page==="users"&&role==="admin"&&<UsersPage showToast={showToast} setLiveUsers={setLiveUsers}/>}
           </main>
         </div>
       </div>
+
+      {/* ── TOAST ── */}
       {toast&&(
-        <div className="toast" style={{background:toast.type==="err"?"#1f0808":"#011f12",border:`1px solid ${toast.type==="err"?"#5c1a1a":"#064e3b"}`,color:toast.type==="err"?"#fca5a5":"#6ee7b7"}}>
+        <div className="toast" style={{background:toast.type==="err"?"#1f0808":"#031a0e",border:`1px solid ${toast.type==="err"?"#5c1a1a":"#0a4a28"}`,color:toast.type==="err"?"#fca5a5":"#6ee7b7"}}>
           <Icon name={toast.type==="err"?"x":"check"} size={14}/> {toast.msg}
         </div>
       )}
+
+      {/* ── CSV MODAL ── */}
       {csvModal&&(
         <div className="ov" onClick={()=>setCsvModal(null)}>
           <div className="mod" style={{maxWidth:640}} onClick={e=>e.stopPropagation()}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-              <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:15}}>📄 Export Data</div>
+              <div style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:15,color:"#F1F5F9"}}>📄 Export Data</div>
               <button style={{background:"none",border:"none",color:"#64748b",cursor:"pointer"}} onClick={()=>setCsvModal(null)}><Icon name="x" size={18}/></button>
             </div>
-            <div style={{fontSize:12,color:"#334155",marginBottom:10}}>Salin teks di bawah → simpan sebagai <strong style={{color:"#6366f1"}}>.csv</strong></div>
-            <textarea readOnly value={csvModal} onClick={e=>e.target.select()} style={{width:"100%",height:260,background:"#060a12",border:"1px solid #151c28",color:"#94a3b8",padding:"11px",borderRadius:10,fontSize:11,fontFamily:"monospace",resize:"vertical",outline:"none",lineHeight:1.6}}/>
+            <div style={{fontSize:12,color:"#475569",marginBottom:10}}>Salin teks di bawah → simpan sebagai <strong style={{color:"#F59E0B"}}>.csv</strong></div>
+            <textarea readOnly value={csvModal} onClick={e=>e.target.select()} style={{width:"100%",height:260,background:"#0A0B10",border:"1px solid #1A1F2E",color:"#94a3b8",padding:"11px",borderRadius:10,fontSize:11,fontFamily:"monospace",resize:"vertical",outline:"none",lineHeight:1.6}}/>
             <div style={{display:"flex",gap:8,marginTop:10}}>
               <button className="btn-p" onClick={()=>navigator.clipboard?.writeText(csvModal).then(()=>{showToast("Disalin! 📋");setCsvModal(null);})}><Icon name="check" size={13}/> Salin ke Clipboard</button>
               <button className="btn-s" onClick={()=>setCsvModal(null)}>Tutup</button>
@@ -541,23 +624,23 @@ function ResetPasswordPage({onDone}){
     }catch(e){setErr(e.message||"Gagal update password.");}
     finally{setBusy(false);}
   };
-  const iS={width:"100%",background:"#02040a",border:"1px solid #151c28",color:"#e2e8f0",padding:"11px 40px",borderRadius:11,fontSize:14,outline:"none",fontFamily:"inherit"};
+  const iS={width:"100%",background:"#0A0B10",border:"1px solid #151c28",color:"#e2e8f0",padding:"11px 40px",borderRadius:11,fontSize:14,outline:"none",fontFamily:"inherit"};
   const iL={position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",color:"#1e2a3a"};
   const iR={position:"absolute",right:11,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#1e2a3a",display:"flex"};
   return(
-    <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#020408"}}>
-      <div style={{width:"100%",maxWidth:400,background:"#040811",border:"1px solid #0d1018",borderRadius:20,padding:"36px 32px"}}>
+    <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#0A0B10"}}>
+      <div style={{width:"100%",maxWidth:400,background:"#0D0F18",border:"1px solid #0d1018",borderRadius:20,padding:"36px 32px"}}>
         {ok?(
           <div style={{textAlign:"center"}}>
             <div style={{fontSize:48,marginBottom:12}}>🎉</div>
-            <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:20,color:"#f1f5f9",marginBottom:8}}>Password Berhasil Diubah!</div>
+            <div style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:18,color:"#f1f5f9",marginBottom:8}}>Password Berhasil Diubah!</div>
             <p style={{color:"#64748b",fontSize:13}}>Mengalihkan ke halaman login...</p>
           </div>
         ):(
           <>
             <div style={{textAlign:"center",marginBottom:24}}>
               <div style={{fontSize:36,marginBottom:8}}>🔐</div>
-              <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:20,color:"#f1f5f9",marginBottom:4}}>Buat Password Baru</div>
+              <div style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:18,color:"#f1f5f9",marginBottom:4}}>Buat Password Baru</div>
               <div style={{color:"#475569",fontSize:12.5}}>Masukkan password baru kamu</div>
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:14}}>
@@ -596,7 +679,7 @@ function LoginPage({onLogin,onLoginSupabase}){
   const [fErr,setFErr]=useState("");
   const [fBusy,setFBusy]=useState(false);
 
-  const iS={width:"100%",background:"#02040a",border:"1px solid #0d1018",color:"#e2e8f0",padding:"11px 40px",borderRadius:11,fontSize:14,outline:"none",outlineOffset:0,fontFamily:"inherit",transition:"border-color .18s",boxSizing:"border-box",display:"block"};
+  const iS={width:"100%",background:"#0A0B10",border:"1px solid #0d1018",color:"#e2e8f0",padding:"11px 40px",borderRadius:11,fontSize:14,outline:"none",outlineOffset:0,fontFamily:"inherit",transition:"border-color .18s",boxSizing:"border-box",display:"block"};
   const iL={position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",color:"#334155"};
   const iR={position:"absolute",right:11,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#334155",display:"flex"};
   const lS={fontSize:10.5,fontWeight:700,color:"#475569",textTransform:"uppercase",letterSpacing:".1em",display:"block",marginBottom:6};
@@ -662,124 +745,143 @@ function LoginPage({onLogin,onLoginSupabase}){
     name:     udata.name||uname,
   }));
 
-  return(
-    <div style={{height:"100vh",maxHeight:"100vh",display:"flex",background:"#0d0d0f",position:"relative",overflow:"hidden"}}>
-      {/* Glow blobs background */}
-      <div style={{position:"absolute",width:700,height:700,borderRadius:"50%",background:"radial-gradient(circle,#7c3aed18,transparent 60%)",top:"-150px",left:"-100px",pointerEvents:"none"}}/>
-      <div style={{position:"absolute",width:500,height:500,borderRadius:"50%",background:"radial-gradient(circle,#f9731614,transparent 60%)",bottom:"-100px",right:"80px",pointerEvents:"none"}}/>
+  const loginCardBg = "#0D0F18";
+  const loginInputStyle = {width:"100%",background:"#0A0B10",border:"1px solid #1A1F2E",color:"#e2e8f0",padding:"10px 13px 10px 40px",borderRadius:10,fontSize:14,outline:"none",fontFamily:"inherit",transition:"border-color .18s",boxSizing:"border-box"};
 
-      {/* Left panel - desktop */}
-      <div className="desk-only" style={{flex:1,display:"flex",flexDirection:"column",justifyContent:"center",padding:"60px 80px"}}>
-        <div style={{maxWidth:480}}>
-          <div style={{fontSize:10,fontWeight:700,letterSpacing:".18em",color:"#475569",textTransform:"uppercase",marginBottom:12}}>Welcome to</div>
-          <div style={{fontFamily:"'Syne',sans-serif",fontSize:54,fontWeight:800,lineHeight:1,marginBottom:16}}>
-            <span style={{color:"#ffffff"}}>Naraya </span>
-            <span style={{background:"linear-gradient(135deg,#f59e0b,#f97316)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>One</span>
+  return(
+    <div style={{height:"100vh",maxHeight:"100vh",display:"flex",background:"#0A0B10",position:"relative",overflow:"hidden",fontFamily:"'Plus Jakarta Sans','DM Sans',sans-serif"}}>
+      {/* Ambient glow */}
+      <div style={{position:"absolute",width:600,height:600,borderRadius:"50%",background:"radial-gradient(circle,rgba(245,158,11,0.07),transparent 65%)",top:"-100px",left:"-80px",pointerEvents:"none"}}/>
+      <div style={{position:"absolute",width:400,height:400,borderRadius:"50%",background:"radial-gradient(circle,rgba(249,115,22,0.06),transparent 65%)",bottom:"-80px",right:"60px",pointerEvents:"none"}}/>
+
+      {/* ── LEFT PANEL (desktop only) ── */}
+      <div className="desk-only" style={{flex:1,display:"flex",flexDirection:"column",justifyContent:"center",padding:"60px 72px",position:"relative"}}>
+        {/* Decorative grid lines */}
+        <div style={{position:"absolute",inset:0,opacity:0.03,backgroundImage:"linear-gradient(#F59E0B 1px,transparent 1px),linear-gradient(90deg,#F59E0B 1px,transparent 1px)",backgroundSize:"40px 40px",pointerEvents:"none"}}/>
+        <div style={{position:"relative",maxWidth:460}}>
+          <div style={{display:"inline-flex",alignItems:"center",gap:8,background:"#1A1408",border:"1px solid #2d2006",borderRadius:8,padding:"5px 12px",marginBottom:20}}>
+            <div style={{width:6,height:6,borderRadius:"50%",background:"#F59E0B"}}/>
+            <span style={{fontSize:10,fontWeight:700,letterSpacing:".14em",color:"#F59E0B",textTransform:"uppercase"}}>Content Management Tracker</span>
           </div>
-          <div style={{fontSize:13,fontWeight:700,color:"#f97316",letterSpacing:".1em",textTransform:"uppercase",marginBottom:16}}>Content Management Tracker System</div>
-          <div style={{fontSize:13.5,color:"#64748b",lineHeight:1.8,marginBottom:40}}>Platform pelaporan dan pelacakan konten untuk tim freelancer Naraya.</div>
-          <div style={{display:"flex",gap:24,flexWrap:"wrap"}}>
-            {[["📱","6 Akun"],["👥","6 Kreator"],["📊","Analytics"],["🎯","Target"]].map(([ic,lbl])=>(
-              <div key={lbl} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-                <div style={{fontSize:22}}>{ic}</div>
-                <div style={{fontSize:10,color:"#475569",fontWeight:700}}>{lbl}</div>
+          <div style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:52,fontWeight:700,lineHeight:1.05,marginBottom:18,letterSpacing:"-2px"}}>
+            <span style={{color:"#F1F5F9"}}>Naraya</span><br/>
+            <span style={{color:"#F59E0B"}}>One</span>
+          </div>
+          <div style={{fontSize:14,color:"#475569",lineHeight:1.8,marginBottom:36,maxWidth:340}}>Platform pelaporan dan pelacakan konten untuk tim freelancer Naraya Group.</div>
+          <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
+            {[["📱","6 Akun aktif"],["👥","6 Kreator"],["📊","Analytics real-time"],["🎯","Target bulanan"]].map(([ic,lbl])=>(
+              <div key={lbl} style={{display:"flex",alignItems:"center",gap:8,background:"#0D0F18",border:"1px solid #1A1F2E",borderRadius:10,padding:"8px 14px"}}>
+                <span style={{fontSize:16}}>{ic}</span>
+                <span style={{fontSize:12,color:"#64748B",fontWeight:600}}>{lbl}</span>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Right panel - form (full width mobile, 440px desktop) */}
-      <div className="login-right-panel" style={{width:"100%",maxWidth:440,background:"#08090e",borderLeft:"1px solid #0f1117",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"clamp(20px,5vw,40px) clamp(16px,5vw,32px)",overflow:"hidden",height:"100vh",boxSizing:"border-box",flexShrink:0}}>
-        <div className="login-mob-inner" style={{width:"100%",boxSizing:"border-box",flexShrink:0}}>
-          {/* Logo */}
-          <div style={{textAlign:"center",marginBottom:28}}>
-            <div className="login-title-sm" style={{fontFamily:"'Syne',sans-serif",fontSize:28,fontWeight:800,marginBottom:2}}>
-              <span style={{color:"#ffffff"}}>Naraya </span>
-              <span style={{background:"linear-gradient(135deg,#f59e0b,#f97316)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>One</span>
+      {/* ── RIGHT PANEL (form) ── */}
+      <div className="login-right-panel" style={{width:"100%",maxWidth:420,background:loginCardBg,borderLeft:"1px solid #1A1F2E",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"clamp(20px,5vw,40px) clamp(16px,5vw,32px)",overflow:"hidden",height:"100vh",boxSizing:"border-box",flexShrink:0}}>
+        <div className="login-mob-inner" style={{width:"100%",boxSizing:"border-box"}}>
+
+          {/* Logo mark */}
+          <div style={{marginBottom:28}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+              <div style={{width:34,height:34,background:"linear-gradient(135deg,#F59E0B,#F97316)",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:800,color:"white"}}>N</div>
+              <div className="login-title-sm" style={{fontFamily:"'Space Grotesk',sans-serif",fontSize:22,fontWeight:700,letterSpacing:"-0.5px"}}>
+                <span style={{color:"#F1F5F9"}}>Naraya </span>
+                <span style={{color:"#F59E0B"}}>One</span>
+              </div>
             </div>
-            <div style={{fontSize:11,color:"#334155",letterSpacing:".06em"}}>Content Management Tracker</div>
+            <div style={{fontSize:12,color:"#334155",letterSpacing:".04em",paddingLeft:44}}>Masuk ke dashboard kamu</div>
           </div>
 
           {showForgot?(
             fSent?(
               <div style={{textAlign:"center",padding:"20px 0"}}>
                 <div style={{fontSize:40,marginBottom:10}}>📬</div>
-                <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:17,color:"#f1f5f9",marginBottom:8}}>Email Terkirim!</div>
+                <div style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:17,color:"#f1f5f9",marginBottom:8}}>Email Terkirim!</div>
                 <p style={{fontSize:12.5,color:"#64748b",lineHeight:1.7,marginBottom:6}}>Link reset dikirim ke:</p>
-                <p style={{fontSize:13,fontWeight:700,color:"#f59e0b",marginBottom:14}}>{fEmail}</p>
-                <div style={{background:"#0d0e14",border:"1px solid #1e2535",borderRadius:10,padding:"11px 14px",fontSize:12,color:"#94a3b8",lineHeight:1.8,marginBottom:14,textAlign:"left"}}>
+                <p style={{fontSize:13,fontWeight:700,color:"#F59E0B",marginBottom:14}}>{fEmail}</p>
+                <div style={{background:"#0A0B10",border:"1px solid #1A1F2E",borderRadius:10,padding:"11px 14px",fontSize:12,color:"#94a3b8",lineHeight:1.9,marginBottom:14,textAlign:"left"}}>
                   <div style={{fontWeight:700,color:"#e2e8f0",marginBottom:6}}>Langkah selanjutnya:</div>
                   <div>1. Buka inbox email kamu</div>
-                  <div>2. Klik link <strong style={{color:"#f59e0b"}}>Reset Password</strong></div>
+                  <div>2. Klik link <strong style={{color:"#F59E0B"}}>Reset Password</strong></div>
                   <div>3. Isi password baru</div>
-                  <div>4. Login dengan username + password baru</div>
+                  <div>4. Login kembali</div>
                 </div>
-                <button onClick={()=>{setShowForgot(false);setFSent(false);setFEmail("");}} style={{background:"linear-gradient(135deg,#6366f1,#7c3aed)",color:"white",border:"none",padding:"9px 20px",borderRadius:10,cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"inherit"}}>← Kembali ke Login</button>
+                <button onClick={()=>{setShowForgot(false);setFSent(false);setFEmail("");}} style={{background:"linear-gradient(135deg,#F59E0B,#F97316)",color:"white",border:"none",padding:"10px 22px",borderRadius:10,cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"inherit"}}>← Kembali ke Login</button>
               </div>
             ):(
               <div style={{display:"flex",flexDirection:"column",gap:14}}>
-                <div style={{textAlign:"center",marginBottom:4}}>
-                  <div style={{fontSize:28,marginBottom:6}}>🔐</div>
-                  <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:15,color:"#f1f5f9"}}>Lupa Password</div>
-                  <div style={{fontSize:12,color:"#475569",marginTop:3}}>Masukkan email pribadi yang terdaftar</div>
+                <div style={{marginBottom:4}}>
+                  <div style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:16,color:"#f1f5f9",marginBottom:3}}>Lupa Password 🔐</div>
+                  <div style={{fontSize:12,color:"#475569"}}>Masukkan email pribadi yang terdaftar</div>
                 </div>
-                <div><label style={lS}>Email Pribadi</label>
-                  <div style={{position:"relative"}}><span style={iL}><Icon name="user" size={15}/></span>
-                    <input type="email" value={fEmail} onChange={e=>setFEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doForgot()} placeholder="email@kamu.com" style={iS}/></div>
+                <div>
+                  <label style={lS}>Email Pribadi</label>
+                  <div style={{position:"relative"}}>
+                    <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",color:"#334155"}}><Icon name="user" size={15}/></span>
+                    <input type="email" value={fEmail} onChange={e=>setFEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doForgot()} placeholder="email@kamu.com" style={loginInputStyle}/>
+                  </div>
                   <div style={{fontSize:11,color:"#334155",marginTop:5}}>Link reset akan dikirim ke email ini</div>
                 </div>
                 {fErr&&<div style={{color:"#fca5a5",fontSize:12.5,padding:"10px 13px",background:"#1f0808",borderRadius:9,border:"1px solid #5c1a1a"}}>{fErr}</div>}
-                <button onClick={doForgot} disabled={fBusy} style={{width:"100%",background:fBusy?"#1e2235":"linear-gradient(135deg,#6366f1,#7c3aed)",color:"white",border:"none",padding:"12px",borderRadius:12,cursor:fBusy?"not-allowed":"pointer",fontSize:14,fontWeight:700,fontFamily:"inherit",opacity:fBusy?0.7:1}}>{fBusy?"Mengirim...":"📨 Kirim Link Reset"}</button>
+                <button onClick={doForgot} disabled={fBusy} style={{width:"100%",background:fBusy?"#1A1F2E":"linear-gradient(135deg,#F59E0B,#F97316)",color:"white",border:"none",padding:"12px",borderRadius:12,cursor:fBusy?"not-allowed":"pointer",fontSize:14,fontWeight:700,fontFamily:"inherit",opacity:fBusy?0.7:1}}>{fBusy?"Mengirim...":"📨 Kirim Link Reset"}</button>
                 <div style={{textAlign:"center"}}><button onClick={()=>{setShowForgot(false);setFErr("");}} style={{background:"none",border:"none",color:"#475569",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>← Kembali ke Login</button></div>
               </div>
             )
           ):(
-            <div style={{display:"flex",flexDirection:"column",gap:16}}>
+            <div style={{display:"flex",flexDirection:"column",gap:15}}>
+              <div>
+                <div style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:17,color:"#F1F5F9",marginBottom:3}}>Selamat Datang!</div>
+                <div style={{fontSize:12,color:"#475569"}}>Masukkan kredensial akun kamu</div>
+              </div>
+
               {/* Username */}
               <div>
                 <label style={lS}>Username</label>
                 <div style={{position:"relative"}}>
-                  <span style={iL}><Icon name="user" size={15}/></span>
-                  <input type="text" value={username} onChange={e=>setUsername(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doLogin()} placeholder="Masukkan username" style={iS} autoComplete="username"/>
+                  <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",color:"#334155"}}><Icon name="user" size={15}/></span>
+                  <input type="text" value={username} onChange={e=>setUsername(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doLogin()} placeholder="Masukkan username" style={loginInputStyle} autoComplete="username"/>
                 </div>
               </div>
+
               {/* Password */}
               <div>
                 <label style={lS}>Password</label>
                 <div style={{position:"relative"}}>
-                  <span style={iL}><Icon name="lock" size={15}/></span>
-                  <input type={sp?"text":"password"} value={p} onChange={e=>setP(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doLogin()} placeholder="Masukkan password" style={iS} autoComplete="current-password"/>
-                  <button onClick={()=>setSp(!sp)} style={iR}><Icon name={sp?"eyeOff":"eye"} size={14}/></button>
+                  <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",color:"#334155"}}><Icon name="lock" size={15}/></span>
+                  <input type={sp?"text":"password"} value={p} onChange={e=>setP(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doLogin()} placeholder="Masukkan password" style={loginInputStyle} autoComplete="current-password"/>
+                  <button onClick={()=>setSp(!sp)} style={{position:"absolute",right:11,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#334155",display:"flex"}}><Icon name={sp?"eyeOff":"eye"} size={14}/></button>
                 </div>
               </div>
 
               {loginErr&&<div style={{color:"#fca5a5",fontSize:12.5,padding:"10px 13px",background:"#1f0808",borderRadius:9,border:"1px solid #5c1a1a",display:"flex",alignItems:"center",gap:7}}><Icon name="warn" size={13}/>{loginErr}</div>}
 
-              <button onClick={doLogin} disabled={lBusy} style={{width:"100%",background:lBusy?"#1e2235":"linear-gradient(135deg,#f59e0b,#f97316)",color:"white",border:"none",padding:"13px",borderRadius:12,cursor:lBusy?"not-allowed":"pointer",fontSize:15,fontWeight:700,fontFamily:"inherit",boxShadow:"0 8px 24px #f9731630",opacity:lBusy?0.7:1,transition:"all .18s"}}>
+              <button onClick={doLogin} disabled={lBusy} style={{width:"100%",background:lBusy?"#1A1F2E":"linear-gradient(135deg,#F59E0B,#F97316)",color:"white",border:"none",padding:"13px",borderRadius:12,cursor:lBusy?"not-allowed":"pointer",fontSize:15,fontWeight:700,fontFamily:"inherit",opacity:lBusy?0.7:1,transition:"all .18s",marginTop:2}}>
                 {lBusy?"Masuk...":"Masuk →"}
               </button>
 
               <div style={{textAlign:"center"}}>
                 <button onClick={()=>{setShowForgot(true);setLoginErr("");}} style={{background:"none",border:"none",color:"#475569",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
-                  Lupa password? <span style={{color:"#f59e0b",fontWeight:600}}>Reset di sini</span>
+                  Lupa password? <span style={{color:"#F59E0B",fontWeight:600}}>Reset di sini</span>
                 </button>
               </div>
 
-              {/* Tombol lihat daftar user */}
-              <div style={{borderTop:"1px solid #0f1117",paddingTop:16}}>
-                <button onClick={()=>setShowUsers(!showUsers)} style={{width:"100%",background:"#0d1018",border:"1px solid #1e2535",color:"#64748b",padding:"9px",borderRadius:10,cursor:"pointer",fontSize:12,fontWeight:600,fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6,transition:"all .15s"}}>
+              {/* Daftar akun */}
+              <div style={{borderTop:"1px solid #1A1F2E",paddingTop:14}}>
+                <button onClick={()=>setShowUsers(!showUsers)} style={{width:"100%",background:"#0A0B10",border:"1px solid #1A1F2E",color:"#64748b",padding:"9px",borderRadius:10,cursor:"pointer",fontSize:12,fontWeight:600,fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6,transition:"all .15s"}}>
                   <Icon name="user" size={12}/> {showUsers?"Sembunyikan":"Lihat"} Daftar Akun
                 </button>
                 {showUsers&&(
-                  <div style={{marginTop:10,background:"#060a12",border:"1px solid #0f1117",borderRadius:12,overflow:"hidden"}}>
-                    <div style={{padding:"8px 12px",borderBottom:"1px solid #0f1117",fontSize:9.5,fontWeight:700,color:"#334155",textTransform:"uppercase",letterSpacing:".1em"}}>Akun yang tersedia</div>
+                  <div style={{marginTop:10,background:"#0A0B10",border:"1px solid #1A1F2E",borderRadius:12,overflow:"hidden"}}>
+                    <div style={{padding:"8px 12px",borderBottom:"1px solid #1A1F2E",fontSize:9.5,fontWeight:700,color:"#334155",textTransform:"uppercase",letterSpacing:".1em"}}>Akun yang tersedia</div>
                     {dummyList.length===0?(
                       <div style={{padding:"14px 12px",textAlign:"center",color:"#334155",fontSize:12}}>Belum ada akun. Admin perlu tambahkan dulu.</div>
                     ):dummyList.map((u,i)=>(
                       <button key={u.username} onClick={()=>{setUsername(u.username);setP(u.pass);setShowUsers(false);}}
-                        style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"9px 12px",background:"none",border:"none",borderBottom:i<dummyList.length-1?"1px solid #0a0e16":"none",cursor:"pointer",transition:"background .12s",textAlign:"left"}}
-                        onMouseEnter={e=>e.currentTarget.style.background="#0d1018"}
+                        style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"9px 12px",background:"none",border:"none",borderBottom:i<dummyList.length-1?"1px solid #0D0F18":"none",cursor:"pointer",transition:"background .12s",textAlign:"left"}}
+                        onMouseEnter={e=>e.currentTarget.style.background="#0D0F18"}
                         onMouseLeave={e=>e.currentTarget.style.background="none"}>
                         <div style={{display:"flex",alignItems:"center",gap:8}}>
                           <div style={{width:6,height:6,borderRadius:"50%",background:u.color,flexShrink:0}}/>
@@ -801,7 +903,7 @@ function LoginPage({onLogin,onLoginSupabase}){
 }
 
 // ─── DASHBOARD PAGE ───────────────────────────────────────────────────────────
-function DashboardPage({ data, updData, showToast, setPage }) {
+function DashboardPage({ data, updData, showToast, setPage, freelancerNames }) {
   const now = new Date();
   const ms = monthStr(now);
   const td = todayStr();
@@ -813,16 +915,19 @@ function DashboardPage({ data, updData, showToast, setPage }) {
   const [editTgt, setEditTgt] = useState(false);
   const [tgtIn, setTgtIn] = useState(String(target));
 
-  const noToday = (data.creators||[]).filter(cr => !(data.posts||[]).some(p => p.creator === cr && p.date === td));
+  // Gunakan freelancerNames dari Kelola User sebagai sumber utama
+  const creatorList = freelancerNames && freelancerNames.length > 0 ? freelancerNames : (data.creators||[]);
+
+  const noToday = creatorList.filter(cr => !(data.posts||[]).some(p => p.creator === cr && p.date === td));
   const debtPosts = (data.posts||[]).filter(p => p.status === "Scheduled" && p.date < td);
 
-  const creatorStats = useMemo(() => (data.creators||[]).map(cr => {
+  const creatorStats = useMemo(() => creatorList.map(cr => {
     const cnt = posted.filter(p => p.creator === cr).length;
     const todayDone = (data.posts||[]).some(p => p.creator === cr && p.date === td && p.status === "Posted");
     const last = (data.posts||[]).filter(p => p.creator === cr && p.status === "Posted").sort((a,b) => b.date.localeCompare(a.date))[0];
     const days = last ? Math.floor((new Date(td) - new Date(last.date)) / 86400000) : null;
     return { cr, cnt, todayDone, days };
-  }).sort((a,b) => b.cnt - a.cnt), [data, td, posted]);
+  }).sort((a,b) => b.cnt - a.cnt), [data, td, posted, creatorList]);
 
   const accDist = useMemo(() => {
     const maxV = Math.max(...(data.accounts||[]).map(a => posted.filter(p => p.account === a).length), 1);
@@ -832,16 +937,19 @@ function DashboardPage({ data, updData, showToast, setPage }) {
 
   return (
     <div>
-      <div style={{ marginBottom:22 }}>
-        <h1 style={{ fontFamily:"'Syne',sans-serif", fontSize:24, fontWeight:800, color:"#f1f5f9" }}>Dashboard</h1>
-        <p style={{ color:"#334155", fontSize:13, marginTop:3 }}>Overview tim — {MI[now.getMonth()]} {now.getFullYear()}</p>
+      {/* PAGE HEADER */}
+      <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:22 }}>
+        <div>
+          <h1 className="page-title">Dashboard</h1>
+          <p className="page-sub">Overview tim — {MI[now.getMonth()]} {now.getFullYear()}</p>
+        </div>
       </div>
 
       {/* NOTIFICATIONS */}
       {(noToday.length > 0 || debtPosts.length > 0) && (
-        <div style={{ display:"flex", flexDirection:"column", gap:9, marginBottom:16 }}>
+        <div style={{ display:"flex", flexDirection:"column", gap:9, marginBottom:18 }}>
           {noToday.length > 0 && (
-            <div style={{ background:"#1a0a00", border:"1px solid #f9731633", borderRadius:12, padding:"13px 16px", display:"flex", alignItems:"flex-start", gap:11 }}>
+            <div style={{ background:"#1a0a00", border:"1px solid #F9731633", borderRadius:12, padding:"13px 16px", display:"flex", alignItems:"flex-start", gap:11 }}>
               <div style={{ color:"#f97316", flexShrink:0, marginTop:1 }}><Icon name="warn" size={17}/></div>
               <div>
                 <div style={{ fontSize:13, fontWeight:700, color:"#fb923c", marginBottom:5 }}>⚠️ {noToday.length} Kreator belum posting hari ini</div>
@@ -863,30 +971,30 @@ function DashboardPage({ data, updData, showToast, setPage }) {
         </div>
       )}
 
-      {/* STAT CARDS */}
-      <div className="sgrid" style={{ marginBottom:16 }}>
+      {/* STAT CARDS — new accent-bar style */}
+      <div className="sgrid" style={{ marginBottom:18 }}>
         {[
-          ["TOTAL BULAN INI", thisMonth.length, "#6366f1"],
-          ["✅ POSTED",       posted.length,                                        "#10b981"],
-          ["🗓️ SCHEDULED",   thisMonth.filter(p => p.status === "Scheduled").length, "#3b82f6"],
-          ["📝 DRAFT",        thisMonth.filter(p => p.status === "Draft").length,    "#f59e0b"],
-        ].map(([l, v, c]) => (
-          <div key={l} className="card" style={{ padding:15 }}>
-            <div style={{ fontSize:9, color:"#334155", fontWeight:700, letterSpacing:".1em", marginBottom:6 }}>{l}</div>
-            <div style={{ fontSize:28, fontWeight:800, fontFamily:"'Syne',sans-serif", color:c }}>{v}</div>
+          ["TOTAL BULAN INI", thisMonth.length,                                          "blue",   "#3B82F6"],
+          ["✅ POSTED",       posted.length,                                              "green",  "#10B981"],
+          ["🗓️ SCHEDULED",   thisMonth.filter(p => p.status === "Scheduled").length,    "blue",   "#60A5FA"],
+          ["📝 DRAFT",        thisMonth.filter(p => p.status === "Draft").length,         "amber",  "#F59E0B"],
+        ].map(([l, v, cls, c]) => (
+          <div key={l} className={`stat-card ${cls}`}>
+            <div style={{ fontSize:9, color:"#475569", fontWeight:700, letterSpacing:".1em", marginBottom:8, textTransform:"uppercase" }}>{l}</div>
+            <div style={{ fontSize:30, fontWeight:700, fontFamily:"'Space Grotesk',sans-serif", color:c, letterSpacing:"-1px", lineHeight:1 }}>{v}</div>
           </div>
         ))}
       </div>
 
       {/* TARGET */}
-      <div className="card" style={{ marginBottom:16, border:`1px solid ${bc}33` }}>
+      <div className="stat-card amber" style={{ marginBottom:18 }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:12, flexWrap:"wrap", gap:8 }}>
           <div>
-            <div style={{ fontSize:9.5, color:"#334155", fontWeight:700, letterSpacing:".1em", textTransform:"uppercase", marginBottom:5 }}>🎯 Progress Target {MI[now.getMonth()]} {now.getFullYear()}</div>
+            <div style={{ fontSize:9.5, color:"#475569", fontWeight:700, letterSpacing:".1em", textTransform:"uppercase", marginBottom:5 }}>🎯 Progress Target {MI[now.getMonth()]} {now.getFullYear()}</div>
             <div style={{ display:"flex", alignItems:"baseline", gap:8, flexWrap:"wrap" }}>
-              <span style={{ fontFamily:"'Syne',sans-serif", fontSize:26, fontWeight:800, color:bc }}>{thisMonth.length.toLocaleString()}</span>
-              <span style={{ fontSize:13, color:"#334155" }}>/ {target.toLocaleString()} video</span>
-              <span style={{ fontSize:20, fontWeight:800, color:bc }}>{pct}%</span>
+              <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:26, fontWeight:700, color:bc, letterSpacing:"-1px" }}>{thisMonth.length.toLocaleString()}</span>
+              <span style={{ fontSize:13, color:"#475569" }}>/ {target.toLocaleString()} video</span>
+              <span style={{ fontSize:20, fontWeight:700, color:bc }}>{pct}%</span>
               {pct >= 100 && <span>🏆</span>}
             </div>
           </div>
@@ -900,53 +1008,78 @@ function DashboardPage({ data, updData, showToast, setPage }) {
             <button className="btn-s" style={{ padding:"6px 12px", fontSize:12 }} onClick={() => { setTgtIn(String(target)); setEditTgt(true); }}><Icon name="edit" size={12}/> Set Target</button>
           )}
         </div>
-        <div style={{ height:14, background:"#151c28", borderRadius:999, overflow:"hidden", marginBottom:7 }}>
-          <div style={{ height:"100%", width:`${pct}%`, background:`linear-gradient(90deg,${bc},${bc}bb)`, borderRadius:999, transition:"width .8s ease", boxShadow:`0 0 14px ${bc}44` }}/>
+        <div style={{ height:10, background:"#1A1F2E", borderRadius:999, overflow:"hidden", marginBottom:7 }}>
+          <div style={{ height:"100%", width:`${pct}%`, background:`linear-gradient(90deg,${bc},${bc}bb)`, borderRadius:999, transition:"width .8s ease" }}/>
         </div>
         <div style={{ display:"flex", justifyContent:"space-between", fontSize:11 }}>
-          <span style={{color:"#f59e0b",fontWeight:600}}>{pct >= 100 ? "🎉 Target tercapai!" : pct >= 75 ? "💪 Hampir sampai!" : pct >= 50 ? "⚡ Terus semangat!" : "🚀 Yuk tingkatkan!"}</span>
-          <span style={{color:"#94a3b8",fontWeight:500}}>Sisa: {Math.max(0, target - thisMonth.length).toLocaleString()} video</span>
+          <span style={{color:"#F59E0B",fontWeight:600}}>{pct >= 100 ? "🎉 Target tercapai!" : pct >= 75 ? "💪 Hampir sampai!" : pct >= 50 ? "⚡ Terus semangat!" : "🚀 Yuk tingkatkan!"}</span>
+          <span style={{color:"#64748B",fontWeight:500}}>Sisa: {Math.max(0, target - thisMonth.length).toLocaleString()} video</span>
         </div>
       </div>
 
       <div className="g2" style={{ marginBottom:16 }}>
-        {/* CREATOR STATUS */}
+        {/* CREATOR STATUS — styled like Kelola User */}
         <div className="card">
-          <div style={{ fontFamily:"'Syne',sans-serif", fontWeight:700, fontSize:13.5, marginBottom:13 }}>👥 Status Kreator Hari Ini</div>
-          <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
-            {creatorStats.map(({ cr, cnt, todayDone, days }, i) => (
-              <div key={cr} style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 11px", borderRadius:10, background:i===0?"#1a1100":i===1?"#0e121a":i===2?"#150d08":"#060a12", border:"1px solid #151c28" }}>
-                <span style={{ fontSize:13 }}>{i===0?"🥇":i===1?"🥈":i===2?"🥉":`#${i+1}`}</span>
-                <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ fontSize:13, fontWeight:600, color:CC[cr]||"#818cf8" }}>{cr}</div>
-                  <div style={{ fontSize:10.5, color:"#334155" }}>
-                    {cnt} post · {days === null ? "belum pernah" : days === 0 ? "hari ini" : days === 1 ? "kemarin" : `${days} hari lalu`}
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+            <div style={{ fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, fontSize:13.5, color:"#F1F5F9" }}>👥 Status Kreator Hari Ini</div>
+            <span style={{ fontSize:11, color:"#475569", background:"#0A0B10", border:"1px solid #1A1F2E", padding:"2px 9px", borderRadius:999 }}>{creatorStats.length} kreator</span>
+          </div>
+          <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+            {creatorStats.map(({ cr, cnt, todayDone, days }, i) => {
+              const initial = cr.charAt(0).toUpperCase();
+              const clr = CC[cr] || CAC[i % CAC.length];
+              return (
+                <div key={cr} style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 12px", borderRadius:10, background:"#0A0B10", border:`1px solid ${todayDone ? "#0a3320" : "#1A1F2E"}` }}>
+                  {/* Rank */}
+                  <div style={{ fontSize:12, width:20, textAlign:"center", flexShrink:0, color:"#475569", fontWeight:700 }}>
+                    {i===0?"🥇":i===1?"🥈":i===2?"🥉":`#${i+1}`}
                   </div>
+                  {/* Avatar */}
+                  <div style={{ width:34, height:34, borderRadius:9, background:clr+"28", border:`1px solid ${clr}44`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:700, color:clr, flexShrink:0 }}>
+                    {initial}
+                  </div>
+                  {/* Info */}
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:13, fontWeight:600, color:"#E2E8F0", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{cr}</div>
+                    <div style={{ fontSize:10.5, color:"#475569", marginTop:1 }}>
+                      {cnt} post · {days === null ? "belum pernah" : days === 0 ? "hari ini" : days === 1 ? "kemarin" : `${days} hari lalu`}
+                    </div>
+                  </div>
+                  {/* Status badge */}
+                  <span style={{ fontSize:11, padding:"4px 10px", borderRadius:7, background:todayDone?"#052E16":"#1F0808", color:todayDone?"#10B981":"#F87171", fontWeight:700, whiteSpace:"nowrap", flexShrink:0, border:`1px solid ${todayDone?"#0a4a28":"#3d1010"}` }}>
+                    {todayDone ? "✅ Sudah" : "❌ Belum"}
+                  </span>
                 </div>
-                <span style={{ fontSize:11, padding:"3px 8px", borderRadius:999, background:todayDone?"#052e16":"#1f0808", color:todayDone?"#6ee7b7":"#f87171", fontWeight:600, whiteSpace:"nowrap" }}>
-                  {todayDone ? "✅ Sudah" : "❌ Belum"}
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
         {/* ACCOUNT DIST */}
         <div className="card">
-          <div style={{ fontFamily:"'Syne',sans-serif", fontWeight:700, fontSize:13.5, marginBottom:13 }}>📱 Distribusi per Akun</div>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+            <div style={{ fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, fontSize:13.5, color:"#F1F5F9" }}>📱 Distribusi per Akun</div>
+            <span style={{ fontSize:11, color:"#475569", background:"#0A0B10", border:"1px solid #1A1F2E", padding:"2px 9px", borderRadius:999 }}>{MI[now.getMonth()]}</span>
+          </div>
           {accDist.every(a => a.cnt === 0) ? (
             <div style={{ color:"#334155", fontSize:13, textAlign:"center", padding:"20px 0" }}>Belum ada data bulan ini</div>
           ) : (
-            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-              {accDist.map(({ acc, cnt, maxV }) => (
-                <div key={acc}>
-                  <div style={{ display:"flex", justifyContent:"space-between", marginBottom:5 }}>
-                    <span style={{ fontSize:12, fontWeight:600, color:AC[acc]||"#818cf8" }}>{acc}</span>
-                    <span style={{ fontSize:12, fontWeight:700 }}>{cnt}</span>
+            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+              {accDist.map(({ acc, cnt, maxV }, i) => {
+                const clr = AC[acc] || CAC[i % CAC.length];
+                return (
+                  <div key={acc} style={{ padding:"9px 12px", background:"#0A0B10", border:"1px solid #1A1F2E", borderRadius:10 }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:9, marginBottom:6 }}>
+                      <div style={{ width:8, height:8, borderRadius:"50%", background:clr, flexShrink:0 }}/>
+                      <span style={{ fontSize:12.5, fontWeight:600, color:"#CBD5E1", flex:1, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{acc}</span>
+                      <span style={{ fontSize:12, fontWeight:700, color:clr }}>{cnt}</span>
+                    </div>
+                    <div className="pbar">
+                      <div className="pfill" style={{ width:`${maxV>0?(cnt/maxV)*100:0}%`, background:clr }}/>
+                    </div>
                   </div>
-                  <div className="pbar"><div className="pfill" style={{ width:`${(cnt/maxV)*100}%`, background:AC[acc]||"#6366f1" }}/></div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -954,7 +1087,7 @@ function DashboardPage({ data, updData, showToast, setPage }) {
 
       {/* QUICK ACTIONS */}
       <div className="card">
-        <div style={{ fontFamily:"'Syne',sans-serif", fontWeight:700, fontSize:13.5, marginBottom:13 }}>⚡ Aksi Cepat</div>
+        <div style={{ fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, fontSize:13.5, color:"#F1F5F9", marginBottom:13 }}>⚡ Aksi Cepat</div>
         <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
           <button className="btn-p" onClick={() => setPage("input")}><Icon name="plus" size={14}/> Input Laporan</button>
           <button className="btn-s" onClick={() => setPage("productivity")}><Icon name="chart" size={14}/> Produktivitas</button>
@@ -1023,8 +1156,8 @@ function InputPage({ data, addPost, updData, showToast, setPage, loggedUsername,
   return (
     <div>
       <div style={{ marginBottom:22 }}>
-        <h1 style={{ fontFamily:"'Syne',sans-serif", fontSize:24, fontWeight:800, color:"#f1f5f9" }}>Input Laporan Posting</h1>
-        <p style={{ color:"#334155", fontSize:13, marginTop:3 }}>Isi form berikut untuk melaporkan konten yang telah diposting.</p>
+        <h1 className="page-title">Input Laporan Posting</h1>
+        <p className="page-sub" style={{ marginTop:3 }}>Isi form berikut untuk melaporkan konten yang telah diposting.</p>
       </div>
       <div className="card" style={{ maxWidth:560 }}>
         <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
@@ -1114,14 +1247,14 @@ function CalendarPage({ data, role, editPost, delPost, showToast, setCsvModal })
     <div>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14, flexWrap:"wrap", gap:10 }}>
         <div>
-          <h1 style={{ fontFamily:"'Syne',sans-serif", fontSize:24, fontWeight:800, color:"#f1f5f9" }}>Kalender Konten</h1>
+          <h1 className="page-title">Kalender Konten</h1>
           <p style={{ color:"#334155", fontSize:13, marginTop:2 }}>{(data.posts||[]).length} konten terinput</p>
         </div>
         <div style={{ display:"flex", gap:6, alignItems:"center", flexWrap:"wrap" }}>
           <button className="btn-s" style={{ padding:"7px 10px" }} onClick={() => setVd(new Date(y, m-1, 1))}><Icon name="cL" size={13}/></button>
           <span style={{ fontWeight:700, fontSize:13.5, minWidth:148, textAlign:"center" }}>{MI[m]} {y}</span>
           <button className="btn-s" style={{ padding:"7px 10px" }} onClick={() => setVd(new Date(y, m+1, 1))}><Icon name="cR" size={13}/></button>
-          <button className="btn-s" onClick={() => exportCSV([["Tanggal","Pembuat","Akun","Tema","Status","Link"],...(data.posts||[]).map(p=>[p.date,p.creator,p.account,p.theme,p.status||"",p.link])],`kalender-${MI[m]}-${y}.csv`, csv=>setCsvModal(csv))}>
+          <button className="btn-p" onClick={() => exportCSV([["Tanggal","Pembuat","Akun","Tema","Status","Link"],...(data.posts||[]).map(p=>[p.date,p.creator,p.account,p.theme,p.status||"",p.link])],`kalender-${MI[m]}-${y}.csv`, csv=>setCsvModal(csv))}>
             <Icon name="dl" size={13}/> Export
           </button>
         </div>
@@ -1129,9 +1262,9 @@ function CalendarPage({ data, role, editPost, delPost, showToast, setCsvModal })
       {/* FILTER */}
       <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:12, alignItems:"center" }}>
         <span style={{ fontSize:10, fontWeight:700, color:"#334155", textTransform:"uppercase", letterSpacing:".08em" }}>Akun:</span>
-        <button onClick={() => setFAcc("all")} style={{ padding:"4px 11px", borderRadius:8, border:"none", background:fAcc==="all"?"linear-gradient(135deg,#6366f1,#7c3aed)":"#0d1018", color:fAcc==="all"?"white":"#64748b", cursor:"pointer", fontSize:11.5, fontWeight:600, fontFamily:"inherit" }}>Semua</button>
+        <button onClick={() => setFAcc("all")} style={{ padding:"4px 11px", borderRadius:8, border:"none", background:fAcc==="all"?"linear-gradient(135deg,#6366f1,#7c3aed)":"#0D0F18", color:fAcc==="all"?"white":"#64748b", cursor:"pointer", fontSize:11.5, fontWeight:600, fontFamily:"inherit" }}>Semua</button>
         {(data.accounts||[]).map(acc => (
-          <button key={acc} onClick={() => setFAcc(acc)} style={{ padding:"4px 11px", borderRadius:8, border:"none", background:fAcc===acc?(AC[acc]||"#6366f1"):"#0d1018", color:fAcc===acc?"white":AC[acc]||"#64748b", cursor:"pointer", fontSize:11.5, fontWeight:600, fontFamily:"inherit" }}>{acc}</button>
+          <button key={acc} onClick={() => setFAcc(acc)} style={{ padding:"4px 11px", borderRadius:8, border:"none", background:fAcc===acc?(AC[acc]||"#6366f1"):"#0D0F18", color:fAcc===acc?"white":AC[acc]||"#64748b", cursor:"pointer", fontSize:11.5, fontWeight:600, fontFamily:"inherit" }}>{acc}</button>
         ))}
       </div>
       {/* CALENDAR GRID */}
@@ -1165,20 +1298,20 @@ function CalendarPage({ data, role, editPost, delPost, showToast, setCsvModal })
               {sel.posts.map(p => {
                 const sc = SC[p.status || ""] || SC[""];
                 return (
-                  <div key={p.id} style={{ background:"#060a12", border:"1px solid #151c28", borderRadius:11, padding:13 }}>
+                  <div key={p.id} style={{ background:"#0A0B10", border:"1px solid #151c28", borderRadius:11, padding:13 }}>
                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:8 }}>
                       <div style={{ flex:1, minWidth:0 }}>
                         <div style={{ display:"flex", gap:5, marginBottom:7, flexWrap:"wrap" }}>
                           <span className="tag" style={{ background:(CC[p.creator]||"#6366f1")+"22", color:CC[p.creator]||"#818cf8" }}>👤 {p.creator}</span>
                           <span className="tag" style={{ background:(AC[p.account]||"#6366f1")+"22", color:AC[p.account]||"#818cf8" }}>📱 {p.account}</span>
-                          <span className="tag" style={{ background:"#151c28", color:"#64748b" }}>🎨 {p.theme}</span>
+                          <span className="tag" style={{ background:"#1A1F2E", color:"#64748b" }}>🎨 {p.theme}</span>
                           {p.status && <span className="tag" style={{ background:sc.bg, color:sc.color }}>{sc.icon} {p.status}</span>}
                         </div>
                         <a href={p.link} target="_blank" rel="noopener noreferrer" style={{ fontSize:11.5, color:"#6366f1", display:"flex", alignItems:"center", gap:4 }}><Icon name="link" size={10}/> {p.link.length>44?p.link.slice(0,44)+"...":p.link}</a>
                       </div>
                       {role === "admin" && (
                         <div style={{ display:"flex", gap:5, flexShrink:0 }}>
-                          <button style={{ background:"#0d1018", border:"1px solid #1e2535", color:"#94a3b8", padding:"5px 8px", borderRadius:8, cursor:"pointer", display:"flex", alignItems:"center" }} onClick={() => setEditP({ ...p })}><Icon name="edit" size={11}/></button>
+                          <button style={{ background:"#0D0F18", border:"1px solid #1e2535", color:"#94a3b8", padding:"5px 8px", borderRadius:8, cursor:"pointer", display:"flex", alignItems:"center" }} onClick={() => setEditP({ ...p })}><Icon name="edit" size={11}/></button>
                           <button className="btn-d" style={{ padding:"5px 8px" }} onClick={() => { delPost(p.id); setSel(s => ({ ...s, posts: s.posts.filter(x => x.id !== p.id) })); showToast("Post dihapus", "err"); }}><Icon name="trash" size={11}/></button>
                         </div>
                       )}
@@ -1229,11 +1362,74 @@ function ProductivityPage({ data, updData, showToast, setCsvModal }) {
     else if (p === "last30")    { const s = new Date(); s.setDate(s.getDate()-30); setSd(s.toISOString().slice(0,10)); setEd(todayStr()); }
   }
 
+  async function exportExcel() {
+    try {
+      // Load XLSX library jika belum ada (sama seperti export lain)
+      if (!window.XLSX) {
+        await new Promise((res, rej) => {
+          const s = document.createElement("script");
+          s.src = "https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js";
+          s.onload = res; s.onerror = rej;
+          document.head.appendChild(s);
+        });
+      }
+      // Load XLSX biasa (sama seperti export kalender)
+      if (!window.XLSX) {
+        await new Promise((res, rej) => {
+          const s = document.createElement("script");
+          s.src = "https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js";
+          s.onload = res; s.onerror = rej;
+          document.head.appendChild(s);
+        });
+      }
+      const XL = window.XLSX;
+
+      // Sheet 1: Pivot Pembuat
+      const pivotRows = [["Pembuat", "Count of Link"]];
+      byC.forEach(([name, cnt]) => pivotRows.push([name, cnt]));
+      pivotRows.push(["──────────────────────", "──────────────"]);
+      pivotRows.push(["Grand Total", filt.length]);
+
+      // Sheet 2: Pivot Akun
+      const akunRows = [["Akun", "Count of Link"]];
+      byA.forEach(([acc, cnt]) => akunRows.push([acc, cnt]));
+      akunRows.push(["──────────────────────────", "──────────────"]);
+      akunRows.push(["Grand Total", filt.length]);
+
+      // Sheet 3: Data lengkap periode ini
+      const detailRows = [["No","Tanggal","Pembuat","Akun","Tema","Status","Link"]];
+      filt.forEach((p, i) => detailRows.push([i+1, p.date, p.creator, p.account||"", p.theme||"", p.status||"", p.link||""]));
+
+      const wb = XL.utils.book_new();
+
+      const ws1 = XL.utils.aoa_to_sheet(pivotRows);
+      ws1["!cols"] = [{wch:22},{wch:16}];
+      XL.utils.book_append_sheet(wb, ws1, "Pivot Pembuat");
+
+      const ws2 = XL.utils.aoa_to_sheet(akunRows);
+      ws2["!cols"] = [{wch:26},{wch:16}];
+      XL.utils.book_append_sheet(wb, ws2, "Pivot Akun");
+
+      const ws3 = XL.utils.aoa_to_sheet(detailRows);
+      ws3["!cols"] = [{wch:5},{wch:13},{wch:18},{wch:20},{wch:16},{wch:12},{wch:50}];
+      XL.utils.book_append_sheet(wb, ws3, "Data Lengkap");
+
+      const fname = `produktivitas_${sd}_sd_${ed}.xlsx`;
+      XL.writeFile(wb, fname);
+      showToast("File Excel berhasil diunduh! 📊");
+    } catch(e) {
+      showToast("Gagal export Excel", "err");
+    }
+  }
+
   return (
     <div>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20, flexWrap:"wrap", gap:10 }}>
-        <div><h1 style={{ fontFamily:"'Syne',sans-serif", fontSize:24, fontWeight:800, color:"#f1f5f9" }}>Produktivitas</h1><p style={{ color:"#334155", fontSize:13, marginTop:2 }}>{filt.length} konten dalam periode ini</p></div>
-
+        <div><h1 className="page-title">Produktivitas</h1><p style={{ color:"#334155", fontSize:13, marginTop:2 }}>{filt.length} konten dalam periode ini</p></div>
+        <button className="btn-p" onClick={exportExcel} style={{gap:7}}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export Excel
+        </button>
       </div>
       {/* TARGET */}
       <div className="card" style={{ marginBottom:14, border:`1px solid ${bc}33` }}>
@@ -1257,7 +1453,7 @@ function ProductivityPage({ data, updData, showToast, setCsvModal }) {
             <button className="btn-s" style={{ padding:"6px 11px", fontSize:11.5 }} onClick={() => { setTgtIn(String(tgt)); setEditTgt(true); }}><Icon name="edit" size={12}/> Set Target</button>
           )}
         </div>
-        <div style={{ height:12, background:"#151c28", borderRadius:999, overflow:"hidden", marginBottom:6 }}>
+        <div style={{ height:12, background:"#1A1F2E", borderRadius:999, overflow:"hidden", marginBottom:6 }}>
           <div style={{ height:"100%", width:`${pct}%`, background:`linear-gradient(90deg,${bc},${bc}bb)`, borderRadius:999, transition:"width .8s ease", boxShadow:`0 0 12px ${bc}44` }}/>
         </div>
         <div style={{ display:"flex", justifyContent:"space-between", fontSize:11 }}>
@@ -1341,7 +1537,7 @@ function ProductivityPage({ data, updData, showToast, setCsvModal }) {
           {byC.length === 0 ? <div style={{ color:"#334155", fontSize:13 }}>Tidak ada data</div> : (
             <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
               {byC.map(([n,c],i) => (
-                <div key={n} style={{ padding:"9px 12px", borderRadius:10, background:i===0?"#1a1100":i===1?"#0a0f18":i===2?"#150d08":"#060a12", border:`1px solid ${i===0?"#f59e0b33":i===1?"#94a3b822":i===2?"#f9731622":"#151c28"}` }}>
+                <div key={n} style={{ padding:"9px 12px", borderRadius:10, background:i===0?"#1a1100":i===1?"#0a0f18":i===2?"#150d08":"#0A0B10", border:`1px solid ${i===0?"#f59e0b33":i===1?"#94a3b822":i===2?"#f9731622":"#1A1F2E"}` }}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:5 }}>
                     <div style={{ display:"flex", alignItems:"center", gap:7 }}><span style={{ fontSize:13 }}>{i===0?"🥇":i===1?"🥈":i===2?"🥉":`#${i+1}`}</span><span style={{ fontSize:13, fontWeight:700, color:CC[n]||"#818cf8" }}>{n}</span></div>
                     <span style={{ fontSize:12.5, fontWeight:700 }}>{c}</span>
@@ -1379,8 +1575,27 @@ function HistoryPage({ data, role, editPost, delPost, showToast, setCsvModal }) 
   const [fs, setFs] = useState("all");
   const [pg, setPg] = useState(1);
   const [editP, setEditP] = useState(null);
+  const [confirmDel, setConfirmDel] = useState(null); // post object yang mau dihapus
   const PER = 15;
+
   const sorted = useMemo(() => [...data.posts].sort((a,b) => b.date.localeCompare(a.date)), [data.posts]);
+
+  // Deteksi link duplikat — link sama, pembuat beda
+  const dupLinks = useMemo(() => {
+    const map = {};
+    (data.posts||[]).forEach(p => {
+      const key = p.link?.trim().toLowerCase();
+      if (!key) return;
+      if (!map[key]) map[key] = [];
+      if (!map[key].includes(p.creator)) map[key].push(p.creator);
+    });
+    const dups = new Set();
+    Object.entries(map).forEach(([link, creators]) => {
+      if (creators.length > 1) dups.add(link);
+    });
+    return dups;
+  }, [data.posts]);
+
   const filt = useMemo(() => sorted.filter(p => {
     if (fc !== "all" && p.creator !== fc) return false;
     if (fa !== "all" && p.account !== fa) return false;
@@ -1388,17 +1603,36 @@ function HistoryPage({ data, role, editPost, delPost, showToast, setCsvModal }) 
     if (search && ![p.creator,p.account,p.theme,p.link,p.date,p.status||""].some(v => v.toLowerCase().includes(search.toLowerCase()))) return false;
     return true;
   }), [sorted, fc, fa, fs, search]);
+
   const totPg = Math.max(1, Math.ceil(filt.length / PER));
   const paged = filt.slice((pg-1)*PER, pg*PER);
   
   useEffect(() => setPg(1), [fc, fa, fs, search]);
-  
+
+  // Hitung berapa link duplikat total
+  const dupCount = dupLinks.size;
+
   return (
     <div>
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20, flexWrap:"wrap", gap:10 }}>
-        <div><h1 style={{ fontFamily:"'Syne',sans-serif", fontSize:24, fontWeight:800, color:"#f1f5f9" }}>History Laporan</h1><p style={{ color:"#334155", fontSize:13, marginTop:2 }}>{filt.length} dari {(data.posts||[]).length} laporan</p></div>
-
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16, flexWrap:"wrap", gap:10 }}>
+        <div><h1 className="page-title">History Laporan</h1><p style={{ color:"#334155", fontSize:13, marginTop:2 }}>{filt.length} dari {(data.posts||[]).length} laporan</p></div>
       </div>
+
+      {/* NOTIF DUPLIKAT LINK */}
+      {dupCount > 0 && (
+        <div style={{ background:"#1a0f00", border:"1px solid #92400e55", borderRadius:12, padding:"12px 16px", marginBottom:14, display:"flex", alignItems:"flex-start", gap:11 }}>
+          <span style={{ fontSize:18, flexShrink:0 }}>⚠️</span>
+          <div>
+            <div style={{ fontSize:13, fontWeight:700, color:"#fbbf24", marginBottom:4 }}>
+              {dupCount} link terdeteksi dipakai oleh lebih dari 1 pembuat konten
+            </div>
+            <div style={{ fontSize:11.5, color:"#78716c", lineHeight:1.6 }}>
+              Baris dengan ikon <span style={{ background:"#92400e44", color:"#fbbf24", padding:"1px 7px", borderRadius:5, fontWeight:700, fontSize:11 }}>⚠ duplikat</span> menggunakan link yang sama dengan pembuat lain. Mohon periksa kembali.
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="card" style={{ marginBottom:14 }}>
         <div style={{ display:"flex", gap:10, flexWrap:"wrap", alignItems:"flex-end" }}>
           <div style={{ flex:2, minWidth:160 }}><label className="lbl">🔍 Cari</label><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari nama, akun, tema..." className="inp"/></div>
@@ -1408,6 +1642,7 @@ function HistoryPage({ data, role, editPost, delPost, showToast, setCsvModal }) 
           {(search||fc!=="all"||fa!=="all"||fs!=="all") && <button className="btn-s" onClick={() => { setSearch(""); setFc("all"); setFa("all"); setFs("all"); }}><Icon name="x" size={12}/> Reset</button>}
         </div>
       </div>
+
       {paged.length === 0 ? (
         <div className="card" style={{ textAlign:"center", padding:44, color:"#1e2a3a" }}>
           <div style={{ fontSize:36, marginBottom:10 }}>📭</div>
@@ -1418,7 +1653,7 @@ function HistoryPage({ data, role, editPost, delPost, showToast, setCsvModal }) 
           <div style={{ overflowX:"auto" }}>
             <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12.5 }}>
               <thead>
-                <tr style={{ borderBottom:"1px solid #0d1018", background:"#060a12" }}>
+                <tr style={{ borderBottom:"1px solid #0d1018", background:"#0A0B10" }}>
                   {["No","Tanggal","Pembuat","Akun","Tema","Status","Link",""].map(h => (
                     <th key={h} style={{ padding:"10px 13px", textAlign:"left", color:"#334155", fontWeight:700, fontSize:10, textTransform:"uppercase", letterSpacing:".08em", whiteSpace:"nowrap" }}>{h}</th>
                   ))}
@@ -1427,19 +1662,27 @@ function HistoryPage({ data, role, editPost, delPost, showToast, setCsvModal }) 
               <tbody>
                 {paged.map((p, idx) => {
                   const sc = SC[p.status || ""] || SC[""];
+                  const isDup = dupLinks.has(p.link?.trim().toLowerCase());
                   return (
-                    <tr key={p.id} className="trow" style={{ borderBottom:"1px solid #080e16" }}>
+                    <tr key={p.id} className="trow" style={{ borderBottom:"1px solid #080e16", background: isDup ? "#1a0f0044" : undefined }}>
                       <td style={{ padding:"9px 13px", color:"#1e2a3a", fontWeight:600, fontSize:11 }}>{(pg-1)*PER+idx+1}</td>
                       <td style={{ padding:"9px 13px", color:"#64748b", whiteSpace:"nowrap" }}>{p.date}</td>
                       <td style={{ padding:"9px 13px" }}><span className="tag" style={{ background:(CC[p.creator]||"#6366f1")+"22", color:CC[p.creator]||"#818cf8" }}>{p.creator}</span></td>
                       <td style={{ padding:"9px 13px" }}><span className="tag" style={{ background:(AC[p.account]||"#6366f1")+"22", color:AC[p.account]||"#818cf8" }}>{p.account}</span></td>
                       <td style={{ padding:"9px 13px", color:"#64748b" }}>{p.theme}</td>
                       <td style={{ padding:"9px 13px" }}>{p.status ? <span className="tag" style={{ background:sc.bg, color:sc.color }}>{sc.icon} {p.status}</span> : <span style={{ color:"#334155", fontSize:11 }}>—</span>}</td>
-                      <td style={{ padding:"9px 13px" }}><a href={p.link} target="_blank" rel="noopener noreferrer" style={{ color:"#6366f1", fontSize:11.5, display:"flex", alignItems:"center", gap:4 }}><Icon name="link" size={10}/> Lihat</a></td>
+                      <td style={{ padding:"9px 13px" }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                          <a href={p.link} target="_blank" rel="noopener noreferrer" style={{ color:"#6366f1", fontSize:11.5, display:"flex", alignItems:"center", gap:4 }}><Icon name="link" size={10}/> Lihat</a>
+                          {isDup && (
+                            <span title="Link ini dipakai oleh lebih dari 1 pembuat!" style={{ background:"#92400e44", color:"#fbbf24", padding:"1px 7px", borderRadius:5, fontWeight:700, fontSize:10, cursor:"default" }}>⚠ duplikat</span>
+                          )}
+                        </div>
+                      </td>
                       <td style={{ padding:"9px 13px" }}>
                         <div style={{ display:"flex", gap:5 }}>
-                          {role === "admin" && <button style={{ background:"#0d1018", border:"1px solid #1e2535", color:"#94a3b8", padding:"4px 8px", borderRadius:7, cursor:"pointer", display:"flex", alignItems:"center" }} onClick={() => setEditP({ ...p })}><Icon name="edit" size={11}/></button>}
-                          {role === "admin" && <button className="btn-d" style={{ padding:"4px 8px" }} onClick={() => { delPost(p.id); showToast("Post dihapus", "err"); }}><Icon name="trash" size={11}/></button>}
+                          {role === "admin" && <button style={{ background:"#0D0F18", border:"1px solid #1e2535", color:"#94a3b8", padding:"4px 8px", borderRadius:7, cursor:"pointer", display:"flex", alignItems:"center" }} onClick={() => setEditP({ ...p })}><Icon name="edit" size={11}/></button>}
+                          {role === "admin" && <button className="btn-d" style={{ padding:"4px 8px" }} onClick={() => setConfirmDel(p)}><Icon name="trash" size={11}/></button>}
                         </div>
                       </td>
                     </tr>
@@ -1455,7 +1698,7 @@ function HistoryPage({ data, role, editPost, delPost, showToast, setCsvModal }) 
                 <button className="btn-s" disabled={pg===1} onClick={() => setPg(p => p-1)} style={{ padding:"5px 9px", opacity: pg===1 ? 0.35 : 1 }}><Icon name="cL" size={12}/></button>
                 {Array.from({length:Math.min(5,totPg)},(_,i) => {
                   const p_ = Math.max(1, Math.min(totPg-4, pg-2)) + i;
-                  return <button key={p_} onClick={() => setPg(p_)} style={{ padding:"5px 9px", borderRadius:8, border:"none", background:p_===pg?"linear-gradient(135deg,#6366f1,#7c3aed)":"#0d1018", color:p_===pg?"white":"#64748b", cursor:"pointer", fontSize:12.5, fontWeight:600, minWidth:30 }}>{p_}</button>;
+                  return <button key={p_} onClick={() => setPg(p_)} style={{ padding:"5px 9px", borderRadius:8, border:"none", background:p_===pg?"linear-gradient(135deg,#F59E0B,#F97316)":"#0D0F18", color:p_===pg?"white":"#64748b", cursor:"pointer", fontSize:12.5, fontWeight:600, minWidth:30 }}>{p_}</button>;
                 })}
                 <button className="btn-s" disabled={pg===totPg} onClick={() => setPg(p => p+1)} style={{ padding:"5px 9px", opacity: pg===totPg ? 0.35 : 1 }}><Icon name="cR" size={12}/></button>
               </div>
@@ -1463,35 +1706,96 @@ function HistoryPage({ data, role, editPost, delPost, showToast, setCsvModal }) 
           )}
         </div>
       )}
+
+      {/* EDIT MODAL */}
       {editP && (
         <EditModal post={editP} data={data}
           onSave={upd => { editPost(editP.id, upd); setEditP(null); showToast("Laporan diperbarui! ✅"); }}
           onClose={() => setEditP(null)}/>
+      )}
+
+      {/* KONFIRMASI HAPUS MODAL */}
+      {confirmDel && (
+        <div className="ov" onClick={() => setConfirmDel(null)}>
+          <div className="mod" style={{ maxWidth:400, textAlign:"center" }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize:44, marginBottom:12 }}>🗑️</div>
+            <div style={{ fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, fontSize:17, color:"#f1f5f9", marginBottom:8 }}>Hapus laporan ini?</div>
+            <div style={{ background:"#0A0B10", border:"1px solid #1A1F2E", borderRadius:10, padding:"11px 14px", marginBottom:16, textAlign:"left" }}>
+              <div style={{ display:"flex", gap:7, flexWrap:"wrap", marginBottom:6 }}>
+                <span className="tag" style={{ background:(CC[confirmDel.creator]||"#6366f1")+"22", color:CC[confirmDel.creator]||"#818cf8" }}>👤 {confirmDel.creator}</span>
+                <span className="tag" style={{ background:(AC[confirmDel.account]||"#6366f1")+"22", color:AC[confirmDel.account]||"#818cf8" }}>📱 {confirmDel.account}</span>
+                <span className="tag" style={{ background:"#1A1F2E", color:"#64748b" }}>📅 {confirmDel.date}</span>
+              </div>
+              <div style={{ fontSize:11.5, color:"#475569", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>🔗 {confirmDel.link}</div>
+            </div>
+            <p style={{ fontSize:13, color:"#64748b", marginBottom:20 }}>Data yang dihapus <strong style={{ color:"#f87171" }}>tidak bisa dikembalikan</strong>.</p>
+            <div style={{ display:"flex", gap:10 }}>
+              <button className="btn-s" style={{ flex:1 }} onClick={() => setConfirmDel(null)}>Batal</button>
+              <button style={{ flex:1, background:"linear-gradient(135deg,#dc2626,#991b1b)", color:"white", border:"none", padding:"10px 16px", borderRadius:10, cursor:"pointer", fontSize:14, fontWeight:700, display:"inline-flex", alignItems:"center", justifyContent:"center", gap:7, fontFamily:"inherit" }}
+                onClick={() => { delPost(confirmDel.id); showToast("Post dihapus", "err"); setConfirmDel(null); }}>
+                <Icon name="trash" size={14}/> Ya, Hapus
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
 }
 
 // ─── SETTINGS PAGE ────────────────────────────────────────────────────────────
-function SettingsPage({ data, updData, showToast }) {
-  const [nC, setNC] = useState(""); const [nA, setNA] = useState(""); const [nT, setNT] = useState("");
-  const [eC, setEC] = useState(null); const [eA, setEA] = useState(null); const [eT, setET] = useState(null);
+function SettingsPage({ data, updData, showToast, freelancerNames, liveUsers }) {
+  const [nA, setNA] = useState(""); const [nT, setNT] = useState("");
+  const [eA, setEA] = useState(null); const [eT, setET] = useState(null);
   const [confirmDel, setConfirmDel] = useState(false);
-  const onAdd    = (k, v, s) => { const t = v.trim(); if (!t) return; updData(d => ({ ...d, [k]: [...d[k], t] })); s(""); showToast(`${t} ditambahkan!`); };
-  const onDel    = (k, v) => { updData(d => ({ ...d, [k]: d[k].filter(x => x !== v) })); showToast("Dihapus", "err"); };
-  const onSaveEdit = (k, o, nv, s) => { const t = nv.trim(); if (!t) return; updData(d => ({ ...d, [k]: d[k].map(x => x === o ? t : x) })); s(null); showToast("Diperbarui!"); };
-  
+  const onAdd    = (k, v, s) => { const t = v.trim(); if (!t) return; updData(d => ({ ...d, [k]: [...(d[k]||[]), t] })); s(""); showToast(`${t} ditambahkan!`); };
+  const onDel    = (k, v) => { updData(d => ({ ...d, [k]: (d[k]||[]).filter(x => x !== v) })); showToast("Dihapus", "err"); };
+  const onSaveEdit = (k, o, nv, s) => { const t = nv.trim(); if (!t) return; updData(d => ({ ...d, [k]: (d[k]||[]).map(x => x === o ? t : x) })); s(null); showToast("Diperbarui!"); };
+
+  // Pembuat konten = nama freelancer dari Kelola User (sumber tunggal, read-only di sini)
+  const creatorDisplay = freelancerNames && freelancerNames.length > 0
+    ? freelancerNames
+    : (data.creators||[]);
+
   return (
     <div>
       <div style={{ marginBottom:22 }}>
-        <h1 style={{ fontFamily:"'Syne',sans-serif", fontSize:24, fontWeight:800, color:"#f1f5f9" }}>Pengaturan</h1>
-        <p style={{ color:"#334155", fontSize:13, marginTop:3 }}>Kelola data master. Hanya admin.</p>
+        <h1 className="page-title">Pengaturan</h1>
+        <p className="page-sub" style={{ marginTop:3 }}>Kelola data master. Hanya admin.</p>
       </div>
-      <SettingsSection title="Pembuat Konten" emoji="👤" k="creators" items={data.creators} nv={nC} setNv={setNC} ed={eC} setEd={setEC} onAdd={onAdd} onDel={onDel} onSaveEdit={onSaveEdit}/>
+
+      {/* PEMBUAT KONTEN — mirror dari Kelola User */}
+      <div className="card" style={{marginBottom:14}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:13}}>
+          <div style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:13.5,color:"#F1F5F9"}}>👤 Pembuat Konten</div>
+          <span style={{fontSize:11,color:"#475569",background:"#0A0B10",border:"1px solid #1A1F2E",padding:"2px 9px",borderRadius:999}}>{creatorDisplay.length} kreator</span>
+        </div>
+        <div style={{background:"#0A0B10",border:"1px solid #1A1F2E",borderRadius:10,padding:"10px 14px",marginBottom:10,display:"flex",alignItems:"center",gap:8}}>
+          <span style={{fontSize:18}}>ℹ️</span>
+          <span style={{fontSize:12,color:"#475569",lineHeight:1.6}}>Daftar pembuat konten otomatis sinkron dari <strong style={{color:"#F59E0B"}}>Kelola User</strong>. Tambah atau hapus kreator lewat menu Kelola User.</span>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:6}}>
+          {creatorDisplay.length === 0 ? (
+            <div style={{textAlign:"center",padding:"16px 0",color:"#334155",fontSize:13}}>Belum ada freelancer. Tambahkan di Kelola User.</div>
+          ) : creatorDisplay.map((name,i) => {
+            const clr = CAC[i % CAC.length];
+            return (
+              <div key={name} style={{display:"flex",alignItems:"center",gap:10,background:"#060a12",padding:"9px 12px",borderRadius:9,border:"1px solid #1A1F2E"}}>
+                <div style={{width:30,height:30,borderRadius:8,background:clr+"22",border:`1px solid ${clr}44`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:clr,flexShrink:0}}>
+                  {name.charAt(0).toUpperCase()}
+                </div>
+                <span style={{flex:1,fontSize:13.5,fontWeight:500,color:"#CBD5E1"}}>{name}</span>
+                <span style={{fontSize:10,color:"#334155",background:"#1A1F2E",padding:"2px 8px",borderRadius:999,fontWeight:600}}>Freelancer</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       <SettingsSection title="Akun Instagram"  emoji="📱" k="accounts" items={data.accounts} nv={nA} setNv={setNA} ed={eA} setEd={setEA} onAdd={onAdd} onDel={onDel} onSaveEdit={onSaveEdit}/>
       <SettingsSection title="Tema Konten"     emoji="🎨" k="themes"   items={data.themes}   nv={nT} setNv={setNT} ed={eT} setEd={setET} onAdd={onAdd} onDel={onDel} onSaveEdit={onSaveEdit}/>
       <div className="card" style={{ border:"1px solid #5c1a1a" }}>
-        <div style={{ fontFamily:"'Syne',sans-serif", fontWeight:700, marginBottom:7, fontSize:13.5, color:"#f87171" }}>⚠️ Zona Berbahaya</div>
+        <div style={{ fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, marginBottom:7, fontSize:13.5, color:"#f87171" }}>⚠️ Zona Berbahaya</div>
         <p style={{ fontSize:13, color:"#334155", marginBottom:11 }}>Hapus semua data posting secara permanen.</p>
         <button className="btn-d" onClick={() => setConfirmDel(true)}><Icon name="trash" size={13}/> Hapus Semua Data Posting</button>
       </div>
@@ -1499,7 +1803,7 @@ function SettingsPage({ data, updData, showToast }) {
         <div className="ov" onClick={() => setConfirmDel(false)}>
           <div className="mod" style={{ maxWidth:400, textAlign:"center" }} onClick={e => e.stopPropagation()}>
             <div style={{ fontSize:44, marginBottom:14 }}>🗑️</div>
-            <div style={{ fontFamily:"'Syne',sans-serif", fontWeight:800, fontSize:18, color:"#f1f5f9", marginBottom:8 }}>Hapus Semua Data?</div>
+            <div style={{ fontFamily:"'Space Grotesk',sans-serif", fontWeight:800, fontSize:18, color:"#f1f5f9", marginBottom:8 }}>Hapus Semua Data?</div>
             <p style={{ fontSize:13, color:"#64748b", lineHeight:1.7, marginBottom:20 }}>Akan menghapus <strong style={{ color:"#f87171" }}>{(data.posts||[]).length} data posting</strong> secara permanen.</p>
             <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
               <button className="btn-s" style={{ flex:1 }} onClick={() => setConfirmDel(false)}>Batal</button>
@@ -1515,7 +1819,7 @@ function SettingsPage({ data, updData, showToast }) {
   );
 }
 // ─── USERS PAGE (Admin only) ──────────────────────────────────────────────────
-function UsersPage({ showToast }) {
+function UsersPage({ showToast, setLiveUsers }) {
   const [users, setUsers] = useState(() => loadUsers());
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -1527,12 +1831,13 @@ function UsersPage({ showToast }) {
 
   // Load dari Supabase saat pertama buka
   useEffect(()=>{
-    loadUsersFromDB().then(u=>{ setUsers(u); setLoading(false); });
+    loadUsersFromDB().then(u=>{ setUsers(u); setLoading(false); if(setLiveUsers) setLiveUsers({...u}); });
   },[]);
 
-  // Simpan ke Supabase + localStorage + update state
+  // Simpan ke Supabase + localStorage + update state lokal + update App state (buat sinkron Dashboard/Pengaturan)
   const persist = async(u) => {
     setUsers({...u});
+    if(setLiveUsers) setLiveUsers({...u});
     await saveUsersToDB(u);
   };
 
@@ -1583,7 +1888,7 @@ function UsersPage({ showToast }) {
     showToast("User berhasil dihapus 🗑️");
   };
 
-  const iS = { width:"100%", background:"#02040a", border:"1px solid #0d1018", color:"#e2e8f0", padding:"10px 14px", borderRadius:10, fontSize:13.5, outline:"none", fontFamily:"inherit", boxSizing:"border-box" };
+  const iS = { width:"100%", background:"#0A0B10", border:"1px solid #0d1018", color:"#e2e8f0", padding:"10px 14px", borderRadius:10, fontSize:13.5, outline:"none", fontFamily:"inherit", boxSizing:"border-box" };
   const lS = { fontSize:10.5, fontWeight:700, color:"#475569", textTransform:"uppercase", letterSpacing:".1em", display:"block", marginBottom:6 };
 
   const adminUsers = Object.entries(users).filter(([,v]) => v.role === "admin");
@@ -1648,7 +1953,7 @@ function UsersPage({ showToast }) {
                 <div style={{display:"flex",gap:8}}>
                   {["freelancer","admin"].map(r=>(
                     <button key={r} onClick={()=>setForm(p=>({...p,role:r}))}
-                      style={{flex:1,padding:"9px",borderRadius:9,border:`1px solid ${form.role===r?"#f97316":"#0d1018"}`,background:form.role===r?"#1a0d00":"#02040a",color:form.role===r?"#f97316":"#475569",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",transition:"all .15s"}}>
+                      style={{flex:1,padding:"9px",borderRadius:9,border:`1px solid ${form.role===r?"#f97316":"#0D0F18"}`,background:form.role===r?"#1a0d00":"#0A0B10",color:form.role===r?"#f97316":"#475569",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",transition:"all .15s"}}>
                       {r==="admin"?"👑 Admin":"🧑 Freelancer"}
                     </button>
                   ))}
@@ -1657,7 +1962,7 @@ function UsersPage({ showToast }) {
               {/* Buttons */}
               <div style={{display:"flex",gap:8,marginTop:4}}>
                 <button onClick={()=>setShowForm(false)}
-                  style={{flex:1,padding:"10px",borderRadius:10,border:"1px solid #0d1018",background:"#02040a",color:"#475569",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+                  style={{flex:1,padding:"10px",borderRadius:10,border:"1px solid #0d1018",background:"#0A0B10",color:"#475569",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
                   Batal
                 </button>
                 <button onClick={saveForm}
@@ -1675,11 +1980,11 @@ function UsersPage({ showToast }) {
         <div className="ov" onClick={()=>setConfirmDel(null)}>
           <div className="mod" style={{maxWidth:360,textAlign:"center"}} onClick={e=>e.stopPropagation()}>
             <div style={{fontSize:40,marginBottom:10}}>🗑️</div>
-            <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:16,color:"#f1f5f9",marginBottom:8}}>Hapus User?</div>
+            <div style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:700,fontSize:15,color:"#f1f5f9",marginBottom:8}}>Hapus User?</div>
             <p style={{fontSize:13,color:"#64748b",marginBottom:20}}>Akun <strong style={{color:"#f59e0b"}}>{confirmDel}</strong> akan dihapus permanen dan tidak bisa login lagi.</p>
             <div style={{display:"flex",gap:8}}>
               <button onClick={()=>setConfirmDel(null)}
-                style={{flex:1,padding:"10px",borderRadius:10,border:"1px solid #0d1018",background:"#02040a",color:"#475569",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+                style={{flex:1,padding:"10px",borderRadius:10,border:"1px solid #0d1018",background:"#0A0B10",color:"#475569",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
                 Batal
               </button>
               <button onClick={()=>deleteUser(confirmDel)}
@@ -1703,7 +2008,7 @@ function UsersPage({ showToast }) {
           ) : (
             <div style={{display:"flex",flexDirection:"column",gap:6}}>
               {list.map(([uname, udata]) => (
-                <div key={uname} style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:"#02040a",border:"1px solid #0d1018",borderRadius:10,padding:"11px 14px",gap:8}}>
+                <div key={uname} style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:"#0A0B10",border:"1px solid #0d1018",borderRadius:10,padding:"11px 14px",gap:8}}>
                   <div style={{display:"flex",alignItems:"center",gap:10,flex:1,minWidth:0}}>
                     <div style={{width:34,height:34,borderRadius:"50%",background:`${color}22`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}>
                       {udata.name?.[0]?.toUpperCase()||uname[0].toUpperCase()}
@@ -1715,7 +2020,7 @@ function UsersPage({ showToast }) {
                   </div>
                   <div style={{display:"flex",gap:6,flexShrink:0}}>
                     <button onClick={()=>openEdit(uname)}
-                      style={{padding:"6px 12px",borderRadius:8,border:"1px solid #1e2535",background:"#060a12",color:"#94a3b8",fontSize:11.5,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>
+                      style={{padding:"6px 12px",borderRadius:8,border:"1px solid #1e2535",background:"#0A0B10",color:"#94a3b8",fontSize:11.5,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>
                       ✏️ Edit
                     </button>
                     {uname !== "admin" && (
