@@ -1247,9 +1247,17 @@ function CalendarPage({ data, role, editPost, delPost, showToast, setCsvModal })
             <div key={i} className={`cday${!cell.cur?" om":""}${isTod?" tc":""}${posts.length>0?" hp":""}`}
               onClick={() => cell.cur && posts.length > 0 && setSel({ date:ds, posts })}>
               <div style={{ fontSize:10.5, fontWeight:isTod?700:400, color:isTod?"#818cf8":"#2d3a50", marginBottom:2 }}>{cell.d}</div>
-              {posts.slice(0,3).map((p, pi) => (
-                <div key={pi} style={{ fontSize:8.5, padding:"1px 4px", borderRadius:3, marginBottom:2, background:(AC[p.account]||"#6366f1")+"22", color:AC[p.account]||"#818cf8", fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.creator}</div>
-              ))}
+              {posts.slice(0,3).map((p, pi) => {
+                const st = p.status || "";
+                const stIcon = st === "Posted" ? "✅" : st === "Draft" ? "📝" : st === "Scheduled" ? "🗓️" : "";
+                const stColor = st === "Posted" ? "#10b981" : st === "Draft" ? "#f59e0b" : st === "Scheduled" ? "#60a5fa" : (AC[p.account]||"#818cf8");
+                const stBg = st === "Posted" ? "#052e1622" : st === "Draft" ? "#1a110022" : st === "Scheduled" ? "#1e3a5f22" : (AC[p.account]||"#6366f1")+"22";
+                return (
+                  <div key={pi} style={{ fontSize:8.5, padding:"1px 4px", borderRadius:3, marginBottom:2, background:stBg, color:stColor, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", display:"flex", alignItems:"center", gap:2 }}>
+                    {stIcon && <span style={{fontSize:7}}>{stIcon}</span>}{p.creator}
+                  </div>
+                );
+              })}
               {posts.length > 3 && <div style={{ fontSize:8.5, color:"#2d3a50" }}>+{posts.length-3}</div>}
             </div>
           );
