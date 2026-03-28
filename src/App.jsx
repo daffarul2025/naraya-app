@@ -342,6 +342,20 @@ function CalPicker({value,onChange,label}){
 function EditModal({post,data,onSave,onClose}){
   const [f,setF]=useState({...post});
   const set=(k,v)=>setF(p=>({...p,[k]:v}));
+
+  // ── DUPLICATE LINK DETECTION (edit — exclude post itself) ─────────────────
+  const normLinkE = l => {
+    if (!l) return "";
+    try { const u = new URL(l.trim()); return (u.origin+u.pathname).toLowerCase().replace(/\/+$/,""); }
+    catch { return l.trim().toLowerCase().replace(/\/+$/,""); }
+  };
+  const dupPost = useMemo(() => {
+    const key = normLinkE(f.link);
+    if (!key || key.length < 8) return null;
+    return (data.posts||[]).find(p => p.id !== post.id && normLinkE(p.link) === key) || null;
+  }, [f.link, data.posts, post.id]);
+  // ──────────────────────────────────────────────────────────────────────────
+
   return(
     <div className="ov" onClick={onClose}>
       <div className="mod" style={{maxWidth:520}} onClick={e=>e.stopPropagation()}>
@@ -359,9 +373,24 @@ function EditModal({post,data,onSave,onClose}){
             <div><label className="lbl">🎨 Tema</label><select value={f.theme} onChange={e=>set("theme",e.target.value)} className="inp">{(data.themes||[]).map(t=><option key={t} value={t}>{t}</option>)}</select></div>
             <div><label className="lbl">📌 Status</label><select value={f.status||""} onChange={e=>set("status",e.target.value)} className="inp"><option value="">-- Pilih --</option><option value="Draft">📝 Draft</option><option value="Scheduled">🗓️ Scheduled</option><option value="Posted">✅ Posted</option></select></div>
           </div>
-          <div><label className="lbl">🔗 Link</label><input type="url" value={f.link} onChange={e=>set("link",e.target.value)} className="inp" placeholder="https://www.instagram.com/p/..."/></div>
+          <div>
+            <label className="lbl">🔗 Link</label>
+            <div style={{position:"relative"}}>
+              <input type="url" value={f.link} onChange={e=>set("link",e.target.value)} className="inp" placeholder="https://www.instagram.com/p/..." style={{borderColor:dupPost?"#f97316":"",paddingRight:dupPost?38:undefined}}/>
+              {dupPost && <span title="Link duplikat!" style={{position:"absolute",right:11,top:"50%",transform:"translateY(-50%)",fontSize:18,cursor:"default"}}>⚠️</span>}
+            </div>
+            {dupPost && (
+              <div style={{marginTop:6,background:"#1a0800",border:"1px solid #f9731655",borderRadius:9,padding:"10px 13px",display:"flex",alignItems:"flex-start",gap:9}}>
+                <span style={{fontSize:15,flexShrink:0}}>⚠️</span>
+                <div>
+                  <div style={{color:"#fb923c",fontSize:12,fontWeight:700,marginBottom:2}}>Link duplikat!</div>
+                  <div style={{color:"#7c3a1a",fontSize:11}}>Sudah diinput oleh <strong style={{color:"#f97316"}}>{dupPost.creator}</strong> · {dupPost.account} · {dupPost.date}</div>
+                </div>
+              </div>
+            )}
+          </div>
           <div style={{display:"flex",gap:8}}>
-            <button className="btn-p" style={{flex:1}} onClick={()=>onSave(f)}><Icon name="check" size={14}/> Simpan</button>
+            <button className="btn-p" style={{flex:1,opacity:dupPost?0.5:1,cursor:dupPost?"not-allowed":"pointer"}} onClick={()=>!dupPost&&onSave(f)} disabled={!!dupPost}><Icon name="check" size={14}/> Simpan</button>
             <button className="btn-s" onClick={onClose}>Batal</button>
           </div>
         </div>
@@ -485,6 +514,38 @@ export default function App(){
   },[data]);
 
   const showToast=(msg,type="ok")=>{setToast({msg,type});setTimeout(()=>setToast(null),3200);};
+
+  // ── GLOBAL DUPLICATE LINK BANNER ─────────────────────────────────────────────
+  const [dupBannerDismissed, setDupBannerDismissed] = useState(false);
+  const [dupBannerExpanded, setDupBannerExpanded]   = useState(false);
+
+  const globalDupGroups = useMemo(() => {
+    if (!data) return [];
+    const normG = l => {
+      if (!l) return "";
+      try { const u = new URL(l.trim()); return (u.origin+u.pathname).toLowerCase().replace(/\/+$/,""); }
+      catch { return l.trim().toLowerCase().replace(/\/+$/,""); }
+    };
+    const map = {};
+    (data.posts||[]).forEach(p => {
+      const key = normG(p.link);
+      if (!key || key.length < 8) return;
+      if (!map[key]) map[key] = [];
+      map[key].push(p);
+    });
+    return Object.values(map).filter(g => g.length > 1);
+  }, [data]);
+
+  // Reset dismiss setiap kali jumlah duplikat berubah
+  const prevDupCount = useRef(0);
+  useEffect(() => {
+    const cnt = globalDupGroups.length;
+    if (cnt !== prevDupCount.current) {
+      prevDupCount.current = cnt;
+      setDupBannerDismissed(false);
+    }
+  }, [globalDupGroups.length]);
+  // ─────────────────────────────────────────────────────────────────────────────
   const updData=fn=>setData(p=>fn(p));
   const editPost=(id,upd)=>updData(d=>({...d,posts:d.posts.map(p=>p.id===id?{...p,...upd}:p)}));
   const delPost=id=>updData(d=>({...d,posts:d.posts.filter(p=>p.id!==id)}));
@@ -523,7 +584,7 @@ export default function App(){
     accounts:      Array.isArray(data.accounts) ? data.accounts : ["WiFicerdas","NarayaConnect","Curhat.santui","SobatNgadu","Mbokdewor","GA.naratelgroup"],
     themes:        Array.isArray(data.themes)   ? data.themes   : ["Edukasi","Promosi","Hiburan","Informasi","Tutorial","Motivasi","Lifestyle","Review"],
   };
-  const props={data:safeData,updData,editPost,delPost,addPost,showToast,setCsvModal,setPage,role,loggedUsername,liveUsers,setLiveUsers,freelancerNames};
+  const props={data:safeData,updData,editPost,delPost,addPost,showToast,setCsvModal,setPage,role,loggedUsername,liveUsers,setLiveUsers,freelancerNames,globalDupGroups};
 
   const uname = loggedUsername||authUser?.email?.split("@")[0]||(role==="admin"?"Admin":"Freelancer");
   const uInitial = uname.charAt(0).toUpperCase();
@@ -589,8 +650,83 @@ export default function App(){
 
       {/* ── TOAST ── */}
       {toast&&(
-        <div className="toast" style={{background:toast.type==="err"?"#1f0808":"#031a0e",border:`1px solid ${toast.type==="err"?"#5c1a1a":"#0a4a28"}`,color:toast.type==="err"?"#fca5a5":"#6ee7b7"}}>
+        <div className="toast" style={{background:toast.type==="err"?"#1f0808":"#031a0e",border:`1px solid ${toast.type==="err"?"#5c1a1a":"#0a4a28"}`,color:toast.type==="err"?"#fca5a5":"#6ee7b7",bottom: globalDupGroups.length>0&&!dupBannerDismissed ? "110px" : "24px",transition:"bottom .3s"}}>
           <Icon name={toast.type==="err"?"x":"check"} size={14}/> {toast.msg}
+        </div>
+      )}
+
+      {/* ── BOTTOM DUPLICATE BANNER (semua user) ── */}
+      {globalDupGroups.length > 0 && !dupBannerDismissed && (
+        <div style={{
+          position:"fixed", bottom:0, left:0, right:0, zIndex:400,
+          background:"linear-gradient(135deg,#7c1a00,#4a0f00)",
+          borderTop:"2px solid #f97316",
+          boxShadow:"0 -4px 32px rgba(249,115,22,0.35)",
+          fontFamily:"'Plus Jakarta Sans',sans-serif",
+          animation:"slideUpBanner .35s cubic-bezier(.4,0,.2,1)"
+        }}>
+          <style>{`@keyframes slideUpBanner{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}`}</style>
+
+          {/* Header bar */}
+          <div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 20px",cursor:"pointer"}} onClick={()=>setDupBannerExpanded(v=>!v)}>
+            <div style={{
+              background:"#f97316", borderRadius:"50%", width:30, height:30,
+              display:"flex", alignItems:"center", justifyContent:"center",
+              fontSize:16, flexShrink:0, animation:"pulse 1.5s infinite"
+            }}>⚠️</div>
+            <style>{`@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(249,115,22,.6)}50%{box-shadow:0 0 0 8px rgba(249,115,22,0)}}`}</style>
+            <div style={{flex:1}}>
+              <div style={{fontSize:13.5,fontWeight:800,color:"#fed7aa",letterSpacing:".01em"}}>
+                🚨 PERINGATAN: {globalDupGroups.length} LINK DUPLIKAT TERDETEKSI!
+              </div>
+              <div style={{fontSize:11,color:"#c2410c",marginTop:1}}>
+                Ada {globalDupGroups.reduce((s,g)=>s+g.length,0)} data dengan link yang sama — klik untuk lihat detail
+              </div>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:11,color:"#9a3412",background:"#7c1a00",padding:"3px 10px",borderRadius:6,fontWeight:600}}>
+                {dupBannerExpanded ? "▼ Tutup" : "▲ Lihat Detail"}
+              </span>
+              <button
+                onClick={e=>{e.stopPropagation();setDupBannerDismissed(true);setDupBannerExpanded(false);}}
+                style={{background:"#7c1a0088",border:"1px solid #9a3412",color:"#fb923c",borderRadius:7,padding:"4px 10px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"inherit"}}>
+                ✕ Tutup
+              </button>
+            </div>
+          </div>
+
+          {/* Expandable detail */}
+          {dupBannerExpanded && (
+            <div style={{
+              maxHeight:"38vh", overflowY:"auto", borderTop:"1px solid #9a341244",
+              padding:"12px 20px", display:"flex", flexDirection:"column", gap:10
+            }}>
+              {globalDupGroups.map((group, gi) => (
+                <div key={gi} style={{background:"#3b0f0088",border:"1px solid #9a341255",borderRadius:10,padding:"10px 14px"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,flexWrap:"wrap"}}>
+                    <span style={{background:"#ef444422",color:"#fca5a5",padding:"2px 9px",borderRadius:5,fontSize:11,fontWeight:700}}>
+                      🔗 Muncul {group.length}x
+                    </span>
+                    <a href={group[0].link} target="_blank" rel="noopener noreferrer"
+                      style={{color:"#fb923c",fontSize:11.5,wordBreak:"break-all",flex:1}}>
+                      {group[0].link.length > 70 ? group[0].link.slice(0,70)+"..." : group[0].link}
+                    </a>
+                  </div>
+                  <div style={{display:"flex",flexDirection:"column",gap:5}}>
+                    {group.map((p,i) => (
+                      <div key={p.id} style={{display:"flex",alignItems:"center",gap:8,background:"#2a0a0066",borderRadius:7,padding:"6px 10px",flexWrap:"wrap"}}>
+                        <span style={{color:"#7c2d12",fontSize:10,fontWeight:700,minWidth:18}}>#{i+1}</span>
+                        <span style={{background:(CC[p.creator]||"#6366f1")+"33",color:CC[p.creator]||"#818cf8",padding:"1px 8px",borderRadius:999,fontSize:11,fontWeight:600}}>👤 {p.creator}</span>
+                        <span style={{background:(AC[p.account]||"#6366f1")+"33",color:AC[p.account]||"#818cf8",padding:"1px 8px",borderRadius:999,fontSize:11,fontWeight:600}}>📱 {p.account}</span>
+                        <span style={{color:"#9a3412",fontSize:11}}>📅 {p.date}</span>
+                        {p.status && <span style={{background:SC[p.status]?.bg||"#1A1F2E",color:SC[p.status]?.color||"#64748b",padding:"1px 7px",borderRadius:5,fontSize:10,fontWeight:600}}>{SC[p.status]?.icon} {p.status}</span>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -890,6 +1026,22 @@ function DashboardPage({ data, updData, showToast, setPage, freelancerNames }) {
   const noToday = creatorList.filter(cr => !(data.posts||[]).some(p => p.creator === cr && p.date === td));
   const debtPosts = (data.posts||[]).filter(p => p.status === "Scheduled" && p.date < td);
 
+  // Deteksi link duplikat dari semua data (untuk notif di Dashboard)
+  const dupLinkCount = useMemo(() => {
+    const normD = l => {
+      if (!l) return "";
+      try { const u = new URL(l.trim()); return (u.origin+u.pathname).toLowerCase().replace(/\/+$/,""); }
+      catch { return l.trim().toLowerCase().replace(/\/+$/,""); }
+    };
+    const count = {};
+    (data.posts||[]).forEach(p => {
+      const key = normD(p.link);
+      if (!key || key.length < 8) return;
+      count[key] = (count[key] || 0) + 1;
+    });
+    return Object.values(count).filter(c => c > 1).length;
+  }, [data.posts]);
+
   const creatorStats = useMemo(() => creatorList.map(cr => {
     const cnt = posted.filter(p => p.creator === cr).length;
     const todayDone = (data.posts||[]).some(p => p.creator === cr && p.date === td && p.status === "Posted");
@@ -934,6 +1086,15 @@ function DashboardPage({ data, updData, showToast, setPage, freelancerNames }) {
               <div>
                 <div style={{ fontSize:13, fontWeight:700, color:"#a78bfa", marginBottom:4 }}>🗓️ {debtPosts.length} konten Scheduled melewati tanggal</div>
                 <div style={{ fontSize:12, color:"#475569" }}>Segera follow up tim untuk menyelesaikan hutang konten.</div>
+              </div>
+            </div>
+          )}
+          {dupLinkCount > 0 && (
+            <div style={{ background:"#1a0f00", border:"1px solid #f9731666", borderRadius:12, padding:"13px 16px", display:"flex", alignItems:"flex-start", gap:11 }}>
+              <span style={{ fontSize:18, flexShrink:0 }}>⚠️</span>
+              <div>
+                <div style={{ fontSize:13, fontWeight:700, color:"#fb923c", marginBottom:4 }}>⚠️ {dupLinkCount} link duplikat terdeteksi dalam data!</div>
+                <div style={{ fontSize:12, color:"#78716c" }}>Ada link yang muncul lebih dari satu kali. <span style={{ color:"#f97316", fontWeight:600, cursor:"pointer" }} onClick={() => setPage("history")}>Lihat di History →</span></div>
               </div>
             </div>
           )}
@@ -1068,7 +1229,7 @@ function DashboardPage({ data, updData, showToast, setPage, freelancerNames }) {
 }
 
 // ─── INPUT PAGE ───────────────────────────────────────────────────────────────
-function InputPage({ data, addPost, updData, showToast, setPage, loggedUsername, role }) {
+function InputPage({ data, addPost, updData, showToast, setPage, loggedUsername, role, globalDupGroups }) {
   const td = todayStr();
 
   // Ambil nama lengkap dari data Kelola User (bukan hanya username)
@@ -1090,12 +1251,33 @@ function InputPage({ data, addPost, updData, showToast, setPage, loggedUsername,
 
   const [f, setF] = useState({ date:td, creator:matchedCreator, account:"", theme:"", link:"", status:"" });
   const [er, setEr] = useState({});
-  
-  const set = (k, v) => { 
-    setF(p => ({ ...p, [k]:v })); 
-    setEr(p => ({ ...p, [k]:"" })); 
+
+  // ── DUPLICATE LINK DETECTION ──────────────────────────────────────────────────
+  // Normalisasi: lowercase, trim spasi, hapus trailing slash, hapus query params
+  const normLink = l => {
+    if (!l) return "";
+    try {
+      const u = new URL(l.trim());
+      // Ambil hanya origin + pathname, buang query & hash
+      return (u.origin + u.pathname).toLowerCase().replace(/\/+$/, "");
+    } catch {
+      // Bukan URL valid → fallback: trim + lowercase + hapus trailing slash
+      return l.trim().toLowerCase().replace(/\/+$/, "");
+    }
   };
-  
+
+  const dupPost = useMemo(() => {
+    const key = normLink(f.link);
+    if (!key || key.length < 8) return null;
+    return (data.posts||[]).find(p => normLink(p.link) === key) || null;
+  }, [f.link, data.posts]);
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  const set = (k, v) => {
+    setF(p => ({ ...p, [k]:v }));
+    setEr(p => ({ ...p, [k]:"" }));
+  };
+
   function validate() {
     const e = {};
     if (!f.date)    e.date    = "Wajib diisi";
@@ -1107,9 +1289,22 @@ function InputPage({ data, addPost, updData, showToast, setPage, loggedUsername,
     setEr(e);
     return !Object.keys(e).length;
   }
-  
+
   function submit() {
+    // Cek duplikat LANGSUNG di sini — jangan andalkan closure dupPost
+    const key = normLink(f.link);
+    const foundDup = key.length >= 8
+      ? (data.posts||[]).find(p => normLink(p.link) === key)
+      : null;
+
+    if (foundDup) {
+      setEr(p => ({ ...p, link:"⚠️ Link ini sudah pernah diinput! Tidak bisa disimpan." }));
+      showToast("🚨 DUPLIKAT! Link sudah ada — input dibatalkan.", "err");
+      return; // HARD BLOCK — tidak lanjut sama sekali
+    }
+
     if (!validate()) return;
+
     // Auto-tambah nama ke creators list kalau belum ada (untuk freelancer baru)
     if (matchedCreator && !(data.creators||[]).some(c => c.toLowerCase() === matchedCreator.toLowerCase())) {
       updData(d => ({ ...d, creators: [...(d.creators||[]), matchedCreator] }));
@@ -1128,6 +1323,38 @@ function InputPage({ data, addPost, updData, showToast, setPage, loggedUsername,
         <h1 className="page-title">Input Laporan Posting</h1>
         <p className="page-sub" style={{ marginTop:3 }}>Isi form berikut untuk melaporkan konten yang telah diposting.</p>
       </div>
+      {/* ── PERINGATAN DUPLIKAT LAMA (di atas form) ── */}
+      {(globalDupGroups||[]).length > 0 && (
+        <div style={{
+          maxWidth:560, marginBottom:16,
+          background:"linear-gradient(135deg,#3b0f00,#1a0700)",
+          border:"2px solid #f97316", borderRadius:13,
+          padding:"14px 16px", display:"flex", alignItems:"flex-start", gap:12,
+          animation:"fadeIn .3s ease"
+        }}>
+          <div style={{fontSize:26,flexShrink:0,lineHeight:1}}>🚨</div>
+          <div>
+            <div style={{fontSize:13.5,fontWeight:800,color:"#fed7aa",marginBottom:5}}>
+              Cek Dulu! Ada {(globalDupGroups||[]).length} link duplikat dalam data lama
+            </div>
+            <div style={{fontSize:12,color:"#c2410c",lineHeight:1.7}}>
+              Sebelum input baru, pastikan link kamu belum ada di bawah ini.
+              Lihat detail lengkap di <strong style={{color:"#f97316"}}>panel merah bawah layar</strong>.
+            </div>
+            <div style={{marginTop:8,display:"flex",flexWrap:"wrap",gap:6}}>
+              {(globalDupGroups||[]).slice(0,3).map((g,i) => (
+                <a key={i} href={g[0].link} target="_blank" rel="noopener noreferrer"
+                  style={{background:"#7c1a0055",border:"1px solid #9a3412",color:"#fb923c",padding:"3px 10px",borderRadius:6,fontSize:10.5,fontWeight:600,display:"inline-flex",alignItems:"center",gap:4,textDecoration:"none"}}>
+                  ⚠ {g[0].link.length>40?g[0].link.slice(0,40)+"...":g[0].link}
+                </a>
+              ))}
+              {(globalDupGroups||[]).length > 3 && (
+                <span style={{color:"#9a3412",fontSize:11,padding:"3px 8px"}}>+{(globalDupGroups||[]).length-3} lainnya...</span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       <div className="card" style={{ maxWidth:560 }}>
         <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
           <div>
@@ -1182,10 +1409,28 @@ function InputPage({ data, addPost, updData, showToast, setPage, loggedUsername,
           </div>
           <div>
             <label className="lbl">🔗 Link Konten</label>
-            <input type="url" value={f.link} onChange={e => set("link", e.target.value)} placeholder="https://www.instagram.com/p/..." className="inp" style={{ borderColor:er.link?"#ef4444":"" }}/>
+            <div style={{ position:"relative" }}>
+              <input type="url" value={f.link} onChange={e => set("link", e.target.value)} placeholder="https://www.instagram.com/p/..." className="inp" style={{ borderColor: dupPost ? "#f97316" : er.link ? "#ef4444" : "", paddingRight: dupPost ? 38 : undefined }}/>
+              {dupPost && (
+                <span title="Link duplikat!" style={{ position:"absolute", right:11, top:"50%", transform:"translateY(-50%)", fontSize:18, cursor:"default" }}>⚠️</span>
+              )}
+            </div>
+            {dupPost && !er.link && (
+              <div style={{ marginTop:6, background:"#1a0800", border:"1px solid #f9731655", borderRadius:9, padding:"10px 13px", display:"flex", alignItems:"flex-start", gap:9 }}>
+                <span style={{ fontSize:16, flexShrink:0 }}>⚠️</span>
+                <div>
+                  <div style={{ color:"#fb923c", fontSize:12.5, fontWeight:700, marginBottom:3 }}>Link ini sudah pernah diinput!</div>
+                  <div style={{ color:"#7c3a1a", fontSize:11.5 }}>
+                    Diinput oleh <strong style={{ color:"#f97316" }}>{dupPost.creator}</strong> · {dupPost.account} · {dupPost.date}
+                  </div>
+                </div>
+              </div>
+            )}
             <Err msg={er.link}/>
           </div>
-          <button className="btn-p" onClick={submit} style={{ alignSelf:"flex-start" }}><Icon name="check" size={14}/> Simpan Laporan</button>
+          <button className="btn-p" onClick={submit} style={{ alignSelf:"flex-start", opacity: dupPost ? 0.5 : 1, cursor: dupPost ? "not-allowed" : "pointer" }} disabled={!!dupPost}>
+            <Icon name="check" size={14}/> Simpan Laporan
+          </button>
         </div>
       </div>
     </div>
@@ -1557,21 +1802,39 @@ function HistoryPage({ data, role, editPost, delPost, showToast, setCsvModal }) 
 
   const sorted = useMemo(() => [...data.posts].sort((a,b) => b.date.localeCompare(a.date)), [data.posts]);
 
-  // Deteksi link duplikat — link sama, pembuat beda
+  // Deteksi link duplikat — link sama muncul lebih dari 1x (siapapun pembuatnya)
+  const normH = l => {
+    if (!l) return "";
+    try { const u = new URL(l.trim()); return (u.origin+u.pathname).toLowerCase().replace(/\/+$/,""); }
+    catch { return l.trim().toLowerCase().replace(/\/+$/,""); }
+  };
   const dupLinks = useMemo(() => {
-    const map = {};
+    const count = {};
     (data.posts||[]).forEach(p => {
-      const key = p.link?.trim().toLowerCase();
-      if (!key) return;
-      if (!map[key]) map[key] = [];
-      if (!map[key].includes(p.creator)) map[key].push(p.creator);
+      const key = normH(p.link);
+      if (!key || key.length < 8) return;
+      count[key] = (count[key] || 0) + 1;
     });
     const dups = new Set();
-    Object.entries(map).forEach(([link, creators]) => {
-      if (creators.length > 1) dups.add(link);
+    Object.entries(count).forEach(([link, cnt]) => {
+      if (cnt > 1) dups.add(link);
     });
     return dups;
   }, [data.posts]);
+
+  // Detail duplikat: untuk setiap link duplikat, list semua post-nya
+  const dupDetail = useMemo(() => {
+    const map = {};
+    (data.posts||[]).forEach(p => {
+      const key = normH(p.link);
+      if (!key || !dupLinks.has(key)) return;
+      if (!map[key]) map[key] = [];
+      map[key].push(p);
+    });
+    return map;
+  }, [data.posts, dupLinks]);
+
+  const [showDupDetail, setShowDupDetail] = useState(false);
 
   const filt = useMemo(() => sorted.filter(p => {
     if (fc !== "all" && p.creator !== fc) return false;
@@ -1597,16 +1860,46 @@ function HistoryPage({ data, role, editPost, delPost, showToast, setCsvModal }) 
 
       {/* NOTIF DUPLIKAT LINK */}
       {dupCount > 0 && (
-        <div style={{ background:"#1a0f00", border:"1px solid #92400e55", borderRadius:12, padding:"12px 16px", marginBottom:14, display:"flex", alignItems:"flex-start", gap:11 }}>
-          <span style={{ fontSize:18, flexShrink:0 }}>⚠️</span>
-          <div>
-            <div style={{ fontSize:13, fontWeight:700, color:"#fbbf24", marginBottom:4 }}>
-              {dupCount} link terdeteksi dipakai oleh lebih dari 1 pembuat konten
-            </div>
-            <div style={{ fontSize:11.5, color:"#78716c", lineHeight:1.6 }}>
-              Baris dengan ikon <span style={{ background:"#92400e44", color:"#fbbf24", padding:"1px 7px", borderRadius:5, fontWeight:700, fontSize:11 }}>⚠ duplikat</span> menggunakan link yang sama dengan pembuat lain. Mohon periksa kembali.
+        <div style={{ background:"#1a0f00", border:"1px solid #f97316aa", borderRadius:12, padding:"14px 16px", marginBottom:14 }}>
+          <div style={{ display:"flex", alignItems:"flex-start", gap:11 }}>
+            <span style={{ fontSize:20, flexShrink:0 }}>⚠️</span>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:13.5, fontWeight:700, color:"#fb923c", marginBottom:4 }}>
+                {dupCount} link duplikat ditemukan dalam data lama!
+              </div>
+              <div style={{ fontSize:11.5, color:"#a16207", lineHeight:1.7, marginBottom:8 }}>
+                Link-link ini muncul lebih dari 1 kali dalam semua data. Kemungkinan ada data ganda yang perlu diperiksa dan dihapus salah satunya.
+                Baris duplikat ditandai <span style={{ background:"#92400e44", color:"#fbbf24", padding:"1px 7px", borderRadius:5, fontWeight:700, fontSize:10 }}>⚠ duplikat</span> di kolom link.
+              </div>
+              <button onClick={() => setShowDupDetail(v => !v)}
+                style={{ background:"#92400e44", border:"1px solid #92400e88", color:"#fbbf24", borderRadius:8, padding:"6px 13px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                {showDupDetail ? "▲ Sembunyikan Detail" : "▼ Lihat Detail Duplikat"}
+              </button>
             </div>
           </div>
+          {showDupDetail && (
+            <div style={{ marginTop:14, display:"flex", flexDirection:"column", gap:10 }}>
+              {Object.entries(dupDetail).map(([link, posts]) => (
+                <div key={link} style={{ background:"#0f0900", border:"1px solid #78350f44", borderRadius:10, padding:"11px 13px" }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:8 }}>
+                    <span style={{ background:"#ef444422", color:"#f87171", padding:"2px 8px", borderRadius:5, fontSize:10.5, fontWeight:700 }}>🔗 {posts.length}x muncul</span>
+                    <a href={link} target="_blank" rel="noopener noreferrer" style={{ color:"#6366f1", fontSize:11, wordBreak:"break-all" }}>{link.length > 60 ? link.slice(0,60)+"..." : link}</a>
+                  </div>
+                  <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
+                    {posts.map((p, i) => (
+                      <div key={p.id} style={{ display:"flex", alignItems:"center", gap:8, background:"#1a0f0055", borderRadius:7, padding:"7px 10px", flexWrap:"wrap" }}>
+                        <span style={{ color:"#64748b", fontSize:10.5, fontWeight:700, minWidth:16 }}>#{i+1}</span>
+                        <span style={{ background:(CC[p.creator]||"#6366f1")+"22", color:CC[p.creator]||"#818cf8", padding:"1px 8px", borderRadius:999, fontSize:11, fontWeight:600 }}>👤 {p.creator}</span>
+                        <span style={{ background:(AC[p.account]||"#6366f1")+"22", color:AC[p.account]||"#818cf8", padding:"1px 8px", borderRadius:999, fontSize:11, fontWeight:600 }}>📱 {p.account}</span>
+                        <span style={{ color:"#475569", fontSize:11 }}>📅 {p.date}</span>
+                        {p.status && <span style={{ background:SC[p.status]?.bg||"#1A1F2E", color:SC[p.status]?.color||"#64748b", padding:"1px 7px", borderRadius:5, fontSize:10.5, fontWeight:600 }}>{SC[p.status]?.icon} {p.status}</span>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -1639,7 +1932,7 @@ function HistoryPage({ data, role, editPost, delPost, showToast, setCsvModal }) 
               <tbody>
                 {paged.map((p, idx) => {
                   const sc = SC[p.status || ""] || SC[""];
-                  const isDup = dupLinks.has(p.link?.trim().toLowerCase());
+                  const isDup = dupLinks.has(normH(p.link));
                   return (
                     <tr key={p.id} className="trow" style={{ borderBottom:"1px solid #080e16", background: isDup ? "#1a0f0044" : undefined }}>
                       <td style={{ padding:"9px 13px", color:"#1e2a3a", fontWeight:600, fontSize:11 }}>{(pg-1)*PER+idx+1}</td>
