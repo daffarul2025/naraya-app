@@ -20,15 +20,24 @@ const DD = {
 // ─── USERS — disimpan di Supabase (id=2) + localStorage backup ──────────────
 const USERS_KEY = "naraya_users_v3";
 const DEFAULT_USERS = {
-  "admin": {pass:"admin123",  role:"admin",      name:"Admin"},
-  "darul": {pass:"darul123",  role:"freelancer",  name:"Daffarul Firdaus Ilmi"},
-  "aryak": {pass:"aryak123",  role:"freelancer",  name:"Arya Kusuma"},
+  "admin":        {pass:"admin123",    role:"admin",       name:"Admin"},
+  "freelance002": {pass:"darul123",    role:"freelancer",  name:"Freelance002_Darul"},
+  "freelance003": {pass:"aryak123",    role:"freelancer",  name:"Freelance003_Arya"},
 };
 function sanitizeUsers(parsed){
   const out={};
+  // Migrasi: rename username lama ke username baru
+  const MIGRATIONS = { "darul":"freelance002", "aryak":"freelance003" };
+  const NAME_MIGRATIONS = {
+    "freelance002": "Freelance002_Darul",
+    "freelance003": "Freelance003_Arya",
+  };
   for(const [k,v] of Object.entries(parsed||{})){
-    if(typeof v==="object"&&v!==null&&v.pass&&v.role)
-      out[k]={pass:v.pass,role:v.role,name:v.name||k};
+    if(typeof v==="object"&&v!==null&&v.pass&&v.role){
+      const newKey = MIGRATIONS[k] || k;
+      const newName = NAME_MIGRATIONS[newKey] || v.name || k;
+      out[newKey]={pass:v.pass,role:v.role,name:newName};
+    }
   }
   // Pastikan akun default selalu ada
   for(const [k,v] of Object.entries(DEFAULT_USERS)){
@@ -1229,17 +1238,18 @@ function DashboardPage({ data, updData, showToast, setPage, freelancerNames }) {
 }
 
 // ─── INPUT PAGE ───────────────────────────────────────────────────────────────
-function InputPage({ data, addPost, updData, showToast, setPage, loggedUsername, role, globalDupGroups }) {
+function InputPage({ data, addPost, updData, showToast, setPage, loggedUsername, role, globalDupGroups, liveUsers }) {
   const td = todayStr();
 
-  // Ambil nama lengkap dari data Kelola User (bukan hanya username)
+  // Ambil nama lengkap dari liveUsers (sumber terbaru, sudah sync dari DB)
   const getUserDisplayName = () => {
     if (!loggedUsername) return "";
-    // Cek di localStorage users — ambil nama lengkap
-    const allUsers = loadUsers();
     const ukey = loggedUsername.trim().toLowerCase();
+    // Cari di liveUsers dulu (sudah sync dari Supabase)
+    if (liveUsers && liveUsers[ukey]?.name) return liveUsers[ukey].name;
+    // Fallback ke localStorage
+    const allUsers = loadUsers();
     if (allUsers[ukey]?.name) return allUsers[ukey].name;
-    // Fallback: kapitalisasi username
     return loggedUsername.charAt(0).toUpperCase() + loggedUsername.slice(1);
   };
 
@@ -1291,7 +1301,10 @@ function InputPage({ data, addPost, updData, showToast, setPage, loggedUsername,
   }
 
   function submit() {
-    // Cek duplikat LANGSUNG di sini — jangan andalkan closure dupPost
+    // Validasi form dulu
+    if (!validate()) return;
+
+    // Cek duplikat link setelah validasi lulus
     const key = normLink(f.link);
     const foundDup = key.length >= 8
       ? (data.posts||[]).find(p => normLink(p.link) === key)
@@ -1300,16 +1313,17 @@ function InputPage({ data, addPost, updData, showToast, setPage, loggedUsername,
     if (foundDup) {
       setEr(p => ({ ...p, link:"⚠️ Link ini sudah pernah diinput! Tidak bisa disimpan." }));
       showToast("🚨 DUPLIKAT! Link sudah ada — input dibatalkan.", "err");
-      return; // HARD BLOCK — tidak lanjut sama sekali
+      return;
     }
-
-    if (!validate()) return;
 
     // Auto-tambah nama ke creators list kalau belum ada (untuk freelancer baru)
-    if (matchedCreator && !(data.creators||[]).some(c => c.toLowerCase() === matchedCreator.toLowerCase())) {
-      updData(d => ({ ...d, creators: [...(d.creators||[]), matchedCreator] }));
+    const creatorName = f.creator || matchedCreator;
+    if (creatorName && !(data.creators||[]).some(c => c.toLowerCase() === creatorName.toLowerCase())) {
+      updData(d => ({ ...d, creators: [...(d.creators||[]), creatorName] }));
     }
-    addPost({ id: Date.now().toString(), ...f, createdAt: new Date().toISOString() });
+
+    const newPost = { id: Date.now().toString(), ...f, creator: creatorName, createdAt: new Date().toISOString() };
+    addPost(newPost);
     setF({ date:td, creator:matchedCreator, account:"", theme:"", link:"", status:"" });
     showToast("Laporan tersimpan! ✅");
     setPage("calendar");
@@ -2135,6 +2149,8 @@ function UsersPage({ showToast, setLiveUsers }) {
     if (form.pass.length < 4) e.pass = "Password minimal 4 karakter";
     if (!editTarget && users[form.username.trim().toLowerCase()])
       e.username = "Username sudah dipakai";
+    if (editTarget && form.username.trim().toLowerCase() !== editTarget && users[form.username.trim().toLowerCase()])
+      e.username = "Username sudah dipakai oleh user lain";
     setFormErr(e);
     return !Object.keys(e).length;
   };
@@ -2191,10 +2207,9 @@ function UsersPage({ showToast, setLiveUsers }) {
               <div>
                 <label style={lS}>Username</label>
                 <input value={form.username} onChange={e=>setForm(p=>({...p,username:e.target.value}))}
-                  placeholder="contoh: budi" style={{...iS, borderColor:formErr.username?"#ef4444":""}}
-                  disabled={!!editTarget}/>
+                  placeholder="contoh: budi" style={{...iS, borderColor:formErr.username?"#ef4444":""}}/>
                 {formErr.username && <div style={{color:"#f87171",fontSize:11.5,marginTop:4}}>{formErr.username}</div>}
-                {editTarget && <div style={{fontSize:11,color:"#334155",marginTop:4}}>Username tidak bisa diubah</div>}
+                {editTarget && <div style={{fontSize:11,color:"#64748b",marginTop:4}}>⚠️ Ubah username akan mengganti key login</div>}
               </div>
               {/* Nama */}
               <div>
