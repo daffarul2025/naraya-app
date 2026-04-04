@@ -224,18 +224,110 @@ input,select,textarea,button{font-family:inherit}
 .nav-btn.active{background:#1A1408;color:#F59E0B;border-left:2px solid #F59E0B;padding-left:8px}
 
 @media(max-width:768px){
-  .sidebar-wrap{position:fixed!important;left:-220px;top:0;height:100vh;width:210px!important;z-index:150;transition:left .25s ease}
-  .sidebar-wrap:hover{width:210px!important}
-  .sidebar-wrap.open{left:0;box-shadow:6px 0 30px rgba(0,0,0,.9)}
-  .sidebar-wrap .sidebar-logo-text,.sidebar-wrap .sidebar-label,.sidebar-wrap .sidebar-user-text{opacity:1!important}
-  .mob-overlay{display:block;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:149}
-  .mob-topbar{display:flex;background:#0D0F18;border-bottom:1px solid #1A1F2E;padding:0 16px;height:52px;align-items:center;justify-content:space-between;flex-shrink:0}
-  .main-pad{padding:16px 14px!important}
+  /* ── SIDEBAR: hidden on mobile, replaced by bottom nav ── */
+  .sidebar-wrap{display:none!important}
+  .mob-overlay{display:none!important}
+
+  /* ── MOBILE TOP BAR ── */
+  .mob-topbar{
+    display:flex!important;
+    background:#0D0F18;
+    border-bottom:1px solid #1A1F2E;
+    padding:0 16px;
+    height:52px;
+    align-items:center;
+    justify-content:space-between;
+    flex-shrink:0;
+    position:sticky;
+    top:0;
+    z-index:100;
+  }
+
+  /* ── BOTTOM NAV ── */
+  .mob-bottomnav{
+    display:flex!important;
+    position:fixed;
+    bottom:0; left:0; right:0;
+    height:62px;
+    background:#0D0F18;
+    border-top:1px solid #1A1F2E;
+    z-index:200;
+    align-items:stretch;
+    padding:0 4px;
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  .mob-bottomnav-btn{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:3px;
+    background:none;
+    border:none;
+    cursor:pointer;
+    color:#475569;
+    font-size:9.5px;
+    font-weight:600;
+    font-family:inherit;
+    padding:6px 2px;
+    border-radius:10px;
+    transition:all .15s;
+    position:relative;
+  }
+  .mob-bottomnav-btn.active{color:#F59E0B}
+  .mob-bottomnav-btn.active .mob-nav-icon{
+    background:#1A1408;
+    border-radius:12px;
+    padding:4px 14px;
+  }
+  .mob-nav-icon{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:4px 10px;
+    transition:all .15s;
+  }
+
+  /* ── LAYOUT ── */
+  .main-pad{padding:14px 14px 80px!important}
   .g2{grid-template-columns:1fr!important}
   .sgrid{grid-template-columns:1fr 1fr!important}
   .desk-only{display:none!important}
+
+  /* ── CARDS ── */
+  .card{padding:14px!important}
+  .stat-card{padding:14px 16px!important}
+
+  /* ── TABLES: horizontal scroll ── */
+  .nr-tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:10px}
+  .nr-tbl{min-width:560px}
+  .nr-tbl th,.nr-tbl td{padding:8px 10px!important;font-size:12px!important}
+
+  /* ── MODALS ── */
+  .mod{padding:18px 16px!important;border-radius:14px!important;max-height:88vh!important}
+  .ov{padding:12px!important;align-items:flex-end!important}
+
+  /* ── INPUTS ── */
+  .inp{font-size:16px!important} /* prevent iOS zoom */
+
+  /* ── PAGE TITLE ── */
+  .page-title{font-size:18px!important}
+
+  /* ── CALENDAR GRID ── */
+  .cday{min-height:54px!important;padding:4px!important}
+
+  /* ── DUPLICATE BANNER ── */
+  .dup-banner-link{font-size:10px!important;word-break:break-all}
+
+  /* ── FORM GRIDS ── */
+  .form-g2{grid-template-columns:1fr!important}
 }
-@media(min-width:769px){.sidebar-wrap{position:relative!important;left:0!important}}
+@media(min-width:769px){
+  .sidebar-wrap{position:relative!important;left:0!important;display:flex!important}
+  .mob-bottomnav{display:none!important}
+  .mob-topbar{display:none!important}
+}
 
 /* ── PAGE HEADER ── */
 .page-title{font-family:'Space Grotesk',sans-serif;font-size:21px;font-weight:700;color:#F1F5F9;letter-spacing:-0.4px;margin-bottom:3px}
@@ -465,6 +557,7 @@ export default function App(){
   const [toast,setToast]=useState(null);
   const [csvModal,setCsvModal]=useState(null);
   const [resetMode,setResetMode]=useState(false);
+  const [mobMore,setMobMore]=useState(false);
   // State users live — supaya Dashboard, Pengaturan, dsb ikut update real-time
   const [liveUsers,setLiveUsers]=useState(()=>loadUsers());
 
@@ -521,6 +614,20 @@ export default function App(){
     },800);
     return()=>clearTimeout(t);
   },[data]);
+
+  // Auto-update Scheduled → Posted tepat di hari H
+  useEffect(()=>{
+    if(!data) return;
+    const td = todayStr();
+    const hasScheduledToday = (data.posts||[]).some(p => p.status==="Scheduled" && p.date===td);
+    if(!hasScheduledToday) return;
+    setData(prev=>({
+      ...prev,
+      posts:(prev.posts||[]).map(p=>
+        p.status==="Scheduled" && p.date===td ? {...p, status:"Posted"} : p
+      )
+    }));
+  },[data?.posts?.length]);
 
   const showToast=(msg,type="ok")=>{setToast({msg,type});setTimeout(()=>setToast(null),3200);};
 
@@ -598,15 +705,39 @@ export default function App(){
   const uname = loggedUsername||authUser?.email?.split("@")[0]||(role==="admin"?"Admin":"Freelancer");
   const uInitial = uname.charAt(0).toUpperCase();
 
+  // Nav items untuk bottom bar mobile (max 5)
+  const mobNav = role === "admin"
+    ? [{id:"home",label:"Dashboard",icon:"home"},{id:"input",label:"Input",icon:"plus"},{id:"calendar",label:"Kalender",icon:"cal"},{id:"productivity",label:"Statistik",icon:"chart"},{id:"settings",label:"Lainnya",icon:"cog"}]
+    : [{id:"input",label:"Input",icon:"plus"},{id:"calendar",label:"Kalender",icon:"cal"}];
+
+  // "Lainnya" pada mobile admin → buka menu pilihan
+  const morePages = [{id:"history",label:"History",icon:"hist"},{id:"users",label:"Kelola User",icon:"user"}];
+
   return(
-    <div style={{minHeight:"100vh",background:"#0A0B10",color:"#cbd5e1",fontFamily:"'Plus Jakarta Sans','DM Sans',sans-serif"}}>
+    <div style={{minHeight:"100vh",height:"100vh",background:"#0A0B10",color:"#cbd5e1",fontFamily:"'Plus Jakarta Sans','DM Sans',sans-serif",display:"flex",flexDirection:"column",overflow:"hidden"}}>
       <style>{GCSS}</style>
 
-      {/* ── BODY: sidebar + main ── */}
-      <div style={{display:"flex",height:"100vh",overflow:"hidden"}}>
-        {sideOpen&&<div className="mob-overlay" onClick={()=>setSideOpen(false)}/>}
+      {/* ── MOBILE TOP BAR ── */}
+      <div className="mob-topbar">
+        <div style={{display:"flex",alignItems:"center",gap:9}}>
+          <div style={{width:28,height:28,background:"linear-gradient(135deg,#F59E0B,#F97316)",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:800,color:"white",flexShrink:0}}>N</div>
+          <div style={{fontFamily:"'Sora',sans-serif",fontSize:16,fontWeight:800,letterSpacing:"-0.5px"}}>
+            <span style={{color:"#F1F5F9"}}>Naraya</span>
+            <span style={{color:"#F59E0B",marginLeft:5}}>One</span>
+          </div>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <div style={{fontSize:11,color:"#475569",fontWeight:600}}>{role==="admin"?"👑 Admin":"🧑"} {uname}</div>
+          <button onClick={doLogout} style={{background:"#141824",border:"1px solid #1e2535",color:"#94a3b8",borderRadius:8,padding:"5px 10px",cursor:"pointer",fontSize:12,fontWeight:600,fontFamily:"inherit",display:"flex",alignItems:"center",gap:5}}>
+            <Icon name="logout" size={13}/> Keluar
+          </button>
+        </div>
+      </div>
 
-        {/* Sidebar — collapsed by default, expands on hover */}
+      {/* ── BODY: sidebar (desktop) + main ── */}
+      <div style={{display:"flex",flex:1,overflow:"hidden"}}>
+
+        {/* Sidebar — desktop only */}
         <div className={`sidebar-wrap${sideOpen?" open":""}`}>
           {/* Logo */}
           <div style={{padding:"6px 6px 14px",borderBottom:"1px solid #1A1F2E",marginBottom:8,flexShrink:0,overflow:"hidden"}}>
@@ -656,6 +787,42 @@ export default function App(){
           </main>
         </div>
       </div>
+
+      {/* ── MOBILE BOTTOM NAV ── */}
+      <div className="mob-bottomnav">
+        {mobNav.map(n => {
+          const isMore = n.id === "settings";
+          const isActive = isMore ? (mobMore || ["settings","history","users"].includes(page)) : page === n.id;
+          return (
+            <button key={n.id} className={`mob-bottomnav-btn${isActive?" active":""}`}
+              onClick={() => {
+                if (isMore) { setMobMore(v => !v); }
+                else { setPage(n.id); setMobMore(false); }
+              }}>
+              <div className="mob-nav-icon"><Icon name={n.icon} size={20}/></div>
+              <span>{n.label}</span>
+              {n.id==="home"&&role==="admin"&&<NotifBadge data={safeData} freelancerNames={freelancerNames}/>}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── MOBILE "LAINNYA" DRAWER ── */}
+      {mobMore && (
+        <div style={{position:"fixed",bottom:62,left:0,right:0,zIndex:199,background:"#0D0F18",borderTop:"1px solid #1A1F2E",padding:"12px 16px",display:"flex",flexDirection:"column",gap:6,boxShadow:"0 -8px 32px rgba(0,0,0,.7)"}}>
+          {morePages.map(n => (
+            <button key={n.id} onClick={() => { setPage(n.id); setMobMore(false); }}
+              style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",borderRadius:12,border:"none",background:page===n.id?"#1A1408":"#141824",color:page===n.id?"#F59E0B":"#94a3b8",fontWeight:600,fontSize:14,cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
+              <Icon name={n.icon} size={18}/> {n.label}
+            </button>
+          ))}
+          <button onClick={() => setMobMore(false)}
+            style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,padding:"10px",borderRadius:12,border:"1px solid #1e2535",background:"#0A0B10",color:"#475569",fontWeight:600,fontSize:13,cursor:"pointer",fontFamily:"inherit",marginTop:2}}>
+            ✕ Tutup
+          </button>
+        </div>
+      )}
+      {mobMore && <div style={{position:"fixed",inset:0,zIndex:198}} onClick={() => setMobMore(false)}/>}
 
       {/* ── TOAST ── */}
       {toast&&(
@@ -1262,6 +1429,13 @@ function InputPage({ data, addPost, updData, showToast, setPage, loggedUsername,
   const [f, setF] = useState({ date:td, creator:matchedCreator, account:"", theme:"", link:"", status:"" });
   const [er, setEr] = useState({});
 
+  // Fix: sync creator ke form setelah liveUsers selesai load dari Supabase
+  useEffect(() => {
+    if (matchedCreator) {
+      setF(prev => ({ ...prev, creator: matchedCreator }));
+    }
+  }, [matchedCreator]);
+
   // ── DUPLICATE LINK DETECTION ──────────────────────────────────────────────────
   // Normalisasi: lowercase, trim spasi, hapus trailing slash, hapus query params
   const normLink = l => {
@@ -1576,6 +1750,7 @@ function ProductivityPage({ data, updData, showToast, setCsvModal }) {
   const [fc, setFc] = useState("all");
   const [editTgt, setEditTgt] = useState(false);
   const [tgtIn, setTgtIn] = useState(String(data.monthlyTarget || 1500));
+  const [confirmReset, setConfirmReset] = useState(false);
 
   const filt = useMemo(() => (data.posts||[]).filter(p => p.date >= sd && p.date <= ed && (fc === "all" || p.creator === fc)), [data.posts, sd, ed, fc]);
   const byC = useMemo(() => { const m = {}; filt.forEach(p => { m[p.creator] = (m[p.creator]||0)+1; }); return Object.entries(m).sort((a,b) => b[1]-a[1]); }, [filt]);
@@ -1584,10 +1759,14 @@ function ProductivityPage({ data, updData, showToast, setCsvModal }) {
   const maxC = byC[0]?.[1] || 1;
 
   const ms = monthStr(now);
-  const thisMPosted = (data.posts||[]).filter(p => p.date.startsWith(ms)).length;
+  // Kumulatif: hitung semua post sejak tanggal reset terakhir (atau semua waktu jika belum pernah reset)
+  const resetDate = data.targetResetDate || null;
+  const totalPosted = (data.posts||[]).filter(p => !resetDate || p.date >= resetDate).length;
   const tgt = data.monthlyTarget || 1500;
-  const pct = Math.min(100, Math.round((thisMPosted / tgt) * 100));
-  const bc = pct >= 100 ? "#10b981" : pct >= 75 ? "#6366f1" : pct >= 50 ? "#f59e0b" : "#f43f5e";
+  // Progress tidak dibatasi 100% — terus bertambah melampaui target
+  const rawPct = Math.round((totalPosted / tgt) * 100);
+  const pct = Math.min(100, rawPct); // untuk lebar bar max 100%, tapi teks tetap tampil asli
+  const bc = rawPct >= 100 ? "#10b981" : rawPct >= 75 ? "#6366f1" : rawPct >= 50 ? "#f59e0b" : "#f43f5e";
 
   function preset(p) {
     const y = now.getFullYear(), m = now.getMonth();
@@ -1671,32 +1850,70 @@ function ProductivityPage({ data, updData, showToast, setCsvModal }) {
       <div className="card" style={{ marginBottom:14, border:`1px solid ${bc}33` }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:10, flexWrap:"wrap", gap:8 }}>
           <div>
-            <div style={{ fontSize:9.5, color:"#334155", fontWeight:700, letterSpacing:".1em", textTransform:"uppercase", marginBottom:4 }}>🎯 Target {MI[now.getMonth()]} {now.getFullYear()}</div>
+            <div style={{ fontSize:9.5, color:"#334155", fontWeight:700, letterSpacing:".1em", textTransform:"uppercase", marginBottom:4 }}>
+              🎯 Target Kumulatif{resetDate ? ` · sejak ${resetDate}` : " · semua waktu"}
+            </div>
             <div style={{ display:"flex", alignItems:"baseline", gap:6, flexWrap:"wrap" }}>
-              <span style={{ fontFamily:"'Syne',sans-serif", fontSize:24, fontWeight:800, color:bc }}>{thisMPosted.toLocaleString()}</span>
+              <span style={{ fontFamily:"'Syne',sans-serif", fontSize:24, fontWeight:800, color:bc }}>{totalPosted.toLocaleString()}</span>
               <span style={{ fontSize:12.5, color:"#334155" }}>/ {tgt.toLocaleString()} video</span>
-              <span style={{ fontSize:18, fontWeight:800, color:bc }}>{pct}%</span>
-              {pct >= 100 && <span>🏆</span>}
+              <span style={{ fontSize:18, fontWeight:800, color:bc }}>{rawPct}%</span>
+              {rawPct >= 100 && <span>🏆</span>}
             </div>
           </div>
-          {editTgt ? (
-            <div style={{ display:"flex", gap:5, alignItems:"center" }}>
-              <input type="number" value={tgtIn} onChange={e => setTgtIn(e.target.value)} className="inp" style={{ width:90, padding:"6px 9px", fontSize:13 }}/>
-              <button className="btn-p" style={{ padding:"6px 10px" }} onClick={() => { const v = parseInt(tgtIn); if (v > 0) { updData(d => ({ ...d, monthlyTarget:v })); showToast("Target diperbarui! 🎯"); } setEditTgt(false); }}><Icon name="check" size={13}/></button>
-              <button className="btn-s" style={{ padding:"6px 9px" }} onClick={() => setEditTgt(false)}><Icon name="x" size={13}/></button>
-            </div>
-          ) : (
-            <button className="btn-s" style={{ padding:"6px 11px", fontSize:11.5 }} onClick={() => { setTgtIn(String(tgt)); setEditTgt(true); }}><Icon name="edit" size={12}/> Set Target</button>
-          )}
+          <div style={{ display:"flex", flexDirection:"column", gap:6, alignItems:"flex-end" }}>
+            {editTgt ? (
+              <div style={{ display:"flex", gap:5, alignItems:"center" }}>
+                <input type="number" value={tgtIn} onChange={e => setTgtIn(e.target.value)} className="inp" style={{ width:90, padding:"6px 9px", fontSize:13 }}/>
+                <button className="btn-p" style={{ padding:"6px 10px" }} onClick={() => {
+                  const v = parseInt(tgtIn);
+                  if (v > 0) { updData(d => ({ ...d, monthlyTarget:v })); showToast("Target diperbarui! 🎯"); }
+                  setEditTgt(false);
+                }}><Icon name="check" size={13}/></button>
+                <button className="btn-s" style={{ padding:"6px 9px" }} onClick={() => setEditTgt(false)}><Icon name="x" size={13}/></button>
+              </div>
+            ) : (
+              <div style={{ display:"flex", gap:6 }}>
+                <button className="btn-s" style={{ padding:"6px 11px", fontSize:11.5 }} onClick={() => { setTgtIn(String(tgt)); setEditTgt(true); }}><Icon name="edit" size={12}/> Set Target</button>
+                <button className="btn-d" style={{ padding:"6px 11px", fontSize:11.5 }} onClick={() => setConfirmReset(true)}>🔄 Reset</button>
+              </div>
+            )}
+          </div>
         </div>
         <div style={{ height:12, background:"#1A1F2E", borderRadius:999, overflow:"hidden", marginBottom:6 }}>
           <div style={{ height:"100%", width:`${pct}%`, background:`linear-gradient(90deg,${bc},${bc}bb)`, borderRadius:999, transition:"width .8s ease", boxShadow:`0 0 12px ${bc}44` }}/>
         </div>
         <div style={{ display:"flex", justifyContent:"space-between", fontSize:11 }}>
-          <span style={{color:"#f59e0b",fontWeight:600}}>{pct >= 100 ? "🎉 Tercapai!" : pct >= 75 ? "💪 Hampir!" : pct >= 50 ? "⚡ Semangat!" : "🚀 Tingkatkan!"}</span>
-          <span style={{color:"#F1F5F9",fontWeight:500}}>Sisa: {Math.max(0, tgt - thisMPosted).toLocaleString()}</span>
+          <span style={{color:"#f59e0b",fontWeight:600}}>{rawPct >= 200 ? "🚀 Luar Biasa!" : rawPct >= 100 ? "🎉 Tercapai!" : rawPct >= 75 ? "💪 Hampir!" : rawPct >= 50 ? "⚡ Semangat!" : "🚀 Tingkatkan!"}</span>
+          <span style={{color:"#F1F5F9",fontWeight:500}}>{totalPosted >= tgt ? `+${(totalPosted - tgt).toLocaleString()} melampaui target` : `Sisa: ${(tgt - totalPosted).toLocaleString()}`}</span>
         </div>
       </div>
+
+      {/* MODAL KONFIRMASI RESET */}
+      {confirmReset && (
+        <div className="ov" onClick={() => setConfirmReset(false)}>
+          <div className="mod" style={{ maxWidth:360, textAlign:"center" }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize:40, marginBottom:10 }}>🔄</div>
+            <div style={{ fontFamily:"'Space Grotesk',sans-serif", fontWeight:700, fontSize:15, color:"#f1f5f9", marginBottom:8 }}>Reset Progress?</div>
+            <p style={{ fontSize:13, color:"#64748b", marginBottom:20, lineHeight:1.6 }}>
+              Progress akan dihitung ulang dari <strong style={{ color:"#f59e0b" }}>hari ini</strong>.<br/>
+              Post lama tidak dihapus, hanya titik hitung yang berubah.
+            </p>
+            <div style={{ display:"flex", gap:8 }}>
+              <button onClick={() => setConfirmReset(false)}
+                style={{ flex:1, padding:"10px", borderRadius:10, border:"1px solid #0d1018", background:"#0A0B10", color:"#475569", fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>
+                Batal
+              </button>
+              <button onClick={() => {
+                updData(d => ({ ...d, targetResetDate: todayStr() }));
+                showToast("Progress direset dari hari ini! 🔄");
+                setConfirmReset(false);
+              }} style={{ flex:1, padding:"10px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#ef4444,#dc2626)", color:"white", fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>
+                Ya, Reset
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* FILTER */}
       <div className="card" style={{ marginBottom:14 }}>
         <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:13 }}>
